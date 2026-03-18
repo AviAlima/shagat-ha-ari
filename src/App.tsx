@@ -90,8 +90,20 @@ function App() {
 
   // Siren scheduling for apartment phase
   const scheduleSiren = useCallback(() => {
-    const baseMin = sirensSurvivedRef.current >= 3 ? 25000 : 45000
-    const baseRange = sirensSurvivedRef.current >= 3 ? 25000 : 45000
+    let baseMin: number, baseRange: number
+    if (sirensSurvivedRef.current === 0) {
+      // First siren comes fast — let the player barely settle in
+      baseMin = 8000
+      baseRange = 7000  // 8-15s
+    } else if (sirensSurvivedRef.current >= 3) {
+      // After evacuation choice (stayed) — intense
+      baseMin = 15000
+      baseRange = 10000 // 15-25s
+    } else {
+      // Normal sirens — quicker than before
+      baseMin = 20000
+      baseRange = 20000 // 20-40s
+    }
     const delay = baseMin + Math.random() * baseRange
     sirenTimerRef.current = setTimeout(() => {
       const maxCountdown = batteryRef.current > 0 ? 60 : 15
