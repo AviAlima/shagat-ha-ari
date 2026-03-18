@@ -31,13 +31,13 @@ interface SfxText {
   rotation: number
 }
 
-const BASE_SPEED = 0.5
-const SNEAKER_SPEED = 0.8
+const BASE_SPEED = 0.65
+const SNEAKER_SPEED = 0.9
 const JUMP_DURATION = 500
 const DUCK_DURATION = 400
-const OBSTACLE_WIDTH = 5
+const OBSTACLE_WIDTH = 3.5
 const PLAYER_X = 15
-const HIT_COOLDOWN = 300
+const HIT_COOLDOWN = 400
 const GRAB_DURATION = 2500
 const CRATE_PROXIMITY = 3
 
@@ -193,7 +193,7 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
   useEffect(() => {
     const initial: Obstacle[] = []
     const types: Array<'box' | 'person' | 'dark'> = ['box', 'person', 'dark']
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 10; i++) {
       initial.push({
         id: nextObstacleId.current++,
         x: 30 + i * 10 + Math.random() * 5,
@@ -228,7 +228,7 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
               lastHitTime.current = now
               setHit(true)
               setTimeout(() => setHit(false), 300)
-              return Math.max(0, prev - 5)
+              return Math.max(0, prev - 3)
             }
           }
         }
