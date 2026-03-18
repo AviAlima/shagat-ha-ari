@@ -170,7 +170,7 @@ function App() {
 
   return (
     <div className={`flex flex-col min-h-screen bg-noir-bg ${
-      game.sanity < 10 ? 'sanity-critical' : game.sanity < 25 ? 'sanity-low' : ''
+      game.sanity < 10 ? 'sanity-critical' : game.sanity < 20 ? 'sanity-low' : game.sanity < 35 ? 'sanity-uneasy' : ''
     }`}>
       <div className="crt-overlay" />
       <NewsTicker />

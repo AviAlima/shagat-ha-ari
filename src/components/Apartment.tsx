@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Monitor, Laptop, Coffee, FlaskConical, Smartphone, ShoppingBag, Clock } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { Shop } from './Shop'
 import type { Upgrades } from '../hooks/useGameState'
 
@@ -91,37 +91,197 @@ function TelAvivSkyline() {
   )
 }
 
+// --- Custom SVG Illustrations ---
+
+function TVSvg() {
+  return (
+    <svg viewBox="0 0 80 70" width="80" height="70" fill="none">
+      {/* Antenna */}
+      <line x1="30" y1="10" x2="40" y2="0" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="50" y1="10" x2="40" y2="0" stroke="#666" strokeWidth="1.5" strokeLinecap="round" />
+      {/* Outer casing */}
+      <rect x="10" y="10" width="60" height="48" rx="5" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Screen */}
+      <motion.rect
+        x="16" y="16" width="48" height="36" rx="2"
+        fill="#111822"
+        stroke="#333"
+        strokeWidth="0.5"
+        animate={{ opacity: [0.6, 0.9, 0.7, 1, 0.8] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      />
+      {/* Scan lines on screen */}
+      {[20, 25, 30, 35, 40, 45].map(y => (
+        <line key={y} x1="18" y1={y} x2="62" y2={y} stroke="#334455" strokeWidth="0.3" opacity="0.4" />
+      ))}
+      {/* Feet */}
+      <rect x="18" y="58" width="8" height="4" rx="1" fill="#1a1a2e" />
+      <rect x="54" y="58" width="8" height="4" rx="1" fill="#1a1a2e" />
+    </svg>
+  )
+}
+
+function LaptopSvg() {
+  return (
+    <svg viewBox="0 0 80 64" width="80" height="64" fill="none">
+      {/* Screen (angled) */}
+      <rect x="16" y="4" width="48" height="32" rx="2" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Screen inner */}
+      <rect x="20" y="8" width="40" height="24" rx="1" fill="#0e1420" />
+      {/* Code lines on screen */}
+      {[12, 16, 20, 24, 28].map((y, i) => (
+        <line key={y} x1="24" y1={y} x2={44 + (i % 3) * 6} y2={y} stroke="#448aff" strokeWidth="0.6" opacity="0.3" />
+      ))}
+      {/* Hinge */}
+      <line x1="14" y1="37" x2="66" y2="37" stroke="#2a2a3e" strokeWidth="1" />
+      {/* Keyboard base */}
+      <rect x="10" y="37" width="60" height="16" rx="2" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Keys */}
+      {[0, 1, 2, 3, 4, 5, 6].map(i => (
+        <rect key={`r1-${i}`} x={18 + i * 7} y={41} width="5" height="3" rx="0.5" fill="#222236" />
+      ))}
+      {[0, 1, 2, 3, 4, 5, 6].map(i => (
+        <rect key={`r2-${i}`} x={18 + i * 7} y={46} width="5" height="3" rx="0.5" fill="#222236" />
+      ))}
+      {/* Trackpad */}
+      <rect x="32" y="51" width="16" height="1.5" rx="0.5" fill="#222236" />
+    </svg>
+  )
+}
+
+function CoffeeSvg() {
+  return (
+    <svg viewBox="0 0 60 80" width="60" height="80" fill="none">
+      {/* Steam */}
+      {[0, 1, 2].map(i => (
+        <motion.path
+          key={i}
+          d={`M${26 + i * 5},28 Q${28 + i * 5},22 ${26 + i * 5},16 Q${24 + i * 5},10 ${26 + i * 5},4`}
+          stroke="#aaa"
+          strokeWidth="1"
+          strokeLinecap="round"
+          fill="none"
+          animate={{ y: [-2, -12], opacity: [0.5, 0] }}
+          transition={{ duration: 2, repeat: Infinity, delay: i * 0.6 }}
+        />
+      ))}
+      {/* Lid */}
+      <rect x="18" y="30" width="24" height="6" rx="2" fill="#2a2a3e" stroke="#3a3a4e" strokeWidth="1" />
+      {/* Lid top nub */}
+      <rect x="27" y="27" width="6" height="4" rx="1.5" fill="#2a2a3e" />
+      {/* Body */}
+      <rect x="16" y="36" width="28" height="38" rx="3" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Handle */}
+      <path d="M44,46 Q54,46 54,56 Q54,66 44,66" stroke="#2a2a3e" strokeWidth="2" fill="none" strokeLinecap="round" />
+      {/* Band */}
+      <rect x="16" y="50" width="28" height="6" fill="#222236" opacity="0.6" />
+    </svg>
+  )
+}
+
+function FermentSvg() {
+  return (
+    <svg viewBox="0 0 60 80" width="60" height="80" fill="none">
+      {/* Jar body */}
+      <rect x="12" y="18" width="36" height="52" rx="3" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Neck */}
+      <rect x="18" y="10" width="24" height="10" rx="2" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Lid */}
+      <rect x="16" y="6" width="28" height="6" rx="2" fill="#2a2a3e" stroke="#3a3a4e" strokeWidth="1" />
+      {/* Liquid fill at ~70% */}
+      <rect x="14" y="34" width="32" height="34" rx="2" fill="#448aff" opacity="0.15" />
+      {/* Bubbles */}
+      {[0, 1, 2].map(i => (
+        <motion.circle
+          key={i}
+          cx={24 + i * 7}
+          r={1.5 + (i % 2) * 0.5}
+          fill="#448aff"
+          animate={{ cy: [60, 36], opacity: [0.6, 0] }}
+          transition={{ duration: 3, repeat: Infinity, delay: i * 0.8 }}
+        />
+      ))}
+    </svg>
+  )
+}
+
+function PhoneSvg() {
+  return (
+    <svg viewBox="0 0 44 72" width="44" height="72" fill="none">
+      {/* Phone body */}
+      <rect x="6" y="4" width="32" height="64" rx="6" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" />
+      {/* Screen */}
+      <rect x="10" y="10" width="24" height="48" rx="2" fill="#0e1420" />
+      {/* Signal bars */}
+      <rect x="13" y="16" width="2" height="4" fill="#448aff" opacity="0.4" />
+      <rect x="17" y="14" width="2" height="6" fill="#448aff" opacity="0.5" />
+      <rect x="21" y="12" width="2" height="8" fill="#448aff" opacity="0.6" />
+      <rect x="25" y="10" width="2" height="10" fill="#448aff" opacity="0.7" />
+      {/* Home button */}
+      <circle cx="22" cy="62" r="3" stroke="#2a2a3e" strokeWidth="1" fill="none" />
+    </svg>
+  )
+}
+
+function ShopBagSvg() {
+  return (
+    <svg viewBox="0 0 60 70" width="60" height="70" fill="none">
+      {/* Handles */}
+      <path d="M20,22 Q20,8 30,8 Q40,8 40,22" stroke="#2a2a3e" strokeWidth="2" fill="none" strokeLinecap="round" />
+      {/* Bag body (trapezoid) */}
+      <path d="M10,22 L14,64 L46,64 L50,22 Z" fill="#1a1a2e" stroke="#2a2a3e" strokeWidth="1.5" strokeLinejoin="round" />
+      {/* Fold line */}
+      <line x1="12" y1="28" x2="48" y2="28" stroke="#2a2a3e" strokeWidth="0.8" opacity="0.5" />
+    </svg>
+  )
+}
+
+// SVG component map
+const svgComponents: Record<string, () => JSX.Element> = {
+  tv: TVSvg,
+  laptop: LaptopSvg,
+  coffee: CoffeeSvg,
+  ferment: FermentSvg,
+  phone: PhoneSvg,
+  shop: ShopBagSvg,
+}
+
 type ItemColorScheme = 'positive' | 'negative' | 'neutral' | 'info'
 
-const colorSchemes: Record<ItemColorScheme, { icon: string; border: string; hover: string; glow: string }> = {
+const colorSchemes: Record<ItemColorScheme, { border: string; hover: string; glow: string }> = {
   positive: {
-    icon: 'text-neon-green',
     border: 'border-neon-green/20',
     hover: 'hover:border-neon-green/50 hover:shadow-[0_0_20px_rgba(0,230,118,0.15)]',
     glow: 'bg-neon-green/5',
   },
   negative: {
-    icon: 'text-alert-red',
     border: 'border-alert-red/20',
     hover: 'hover:border-alert-red/50 hover:shadow-[0_0_20px_rgba(255,23,68,0.15)]',
     glow: 'bg-alert-red/5',
   },
   neutral: {
-    icon: 'text-neon-amber',
     border: 'border-neon-amber/20',
     hover: 'hover:border-neon-amber/50 hover:shadow-[0_0_20px_rgba(255,171,0,0.15)]',
     glow: 'bg-neon-amber/5',
   },
   info: {
-    icon: 'text-neon-blue',
     border: 'border-neon-blue/20',
     hover: 'hover:border-neon-blue/50 hover:shadow-[0_0_20px_rgba(68,138,255,0.15)]',
     glow: 'bg-neon-blue/5',
   },
 }
 
+const glowColors: Record<string, string> = {
+  tv: '#ff4444',
+  laptop: '#ffab00',
+  coffee: '#00e676',
+  ferment: '#448aff',
+  phone: '#448aff',
+  shop: '#ffab00',
+}
+
 function ApartmentItem({
-  icon: Icon,
+  svgKey,
   label,
   onClick,
   disabled,
@@ -130,7 +290,7 @@ function ApartmentItem({
   colorScheme = 'negative',
   subtitle,
 }: {
-  icon: typeof Monitor
+  svgKey: string
   label: string
   onClick: () => void
   disabled: boolean
@@ -140,27 +300,52 @@ function ApartmentItem({
   subtitle?: string
 }) {
   const scheme = colorSchemes[colorScheme]
+  const SvgComponent = svgComponents[svgKey]
+  const glowColor = glowColors[svgKey]
+
   return (
     <motion.button
-      whileHover={disabled ? {} : { scale: 1.04, y: -1 }}
+      whileHover={disabled ? {} : { scale: 1.04, y: -2 }}
       whileTap={disabled ? {} : { scale: 0.96 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer min-h-[48px] ${
+      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all cursor-pointer ${
         disabled
           ? 'border-noir-border/30 bg-noir-card/20 opacity-40 cursor-not-allowed'
           : `${scheme.border} bg-noir-card/40 ${scheme.hover}`
       }`}
     >
-      <div className={`p-2 rounded-md flex-shrink-0 ${disabled ? 'bg-noir-card/30' : scheme.glow}`}>
-        <Icon size={22} className={disabled ? 'text-text-muted/30' : scheme.icon} />
+      {/* SVG with neon backlight */}
+      <div className="relative flex items-center justify-center w-full" style={{ height: '68px' }}>
+        {/* Glow layer */}
+        {!disabled && (
+          <div
+            className="absolute blur-xl opacity-30 rounded-full"
+            style={{
+              backgroundColor: glowColor,
+              width: '60px',
+              height: '60px',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+            }}
+          />
+        )}
+        {/* SVG on top */}
+        <div className="relative z-10 flex items-center justify-center" style={{ height: '64px' }}>
+          <SvgComponent />
+        </div>
       </div>
-      <div className="flex flex-col items-start text-left min-w-0">
+
+      {/* Label and subtitle */}
+      <div className="flex flex-col items-center text-center min-w-0">
         <span className="text-[11px] text-text-primary/80 uppercase tracking-wider font-bold">{label}</span>
         {subtitle && (
           <span className={`text-[9px] ${disabled ? 'text-text-muted/30' : 'text-text-muted/60'}`}>{subtitle}</span>
         )}
       </div>
+
+      {/* Cooldown bar */}
       {cooldownPct > 0 && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-noir-border rounded-b-lg overflow-hidden">
           <div
@@ -169,6 +354,8 @@ function ApartmentItem({
           />
         </div>
       )}
+
+      {/* Status text popup */}
       <AnimatePresence>
         {statusText && (
           <motion.span
@@ -350,10 +537,10 @@ export function Apartment({
           )}
         </AnimatePresence>
 
-        {/* Interactive Items Grid */}
-        <div className="grid grid-cols-2 gap-2 flex-1 content-start">
+        {/* Interactive Items Grid — 3 columns, vertical cards */}
+        <div className="grid grid-cols-3 gap-2 flex-1 content-start">
           <ApartmentItem
-            icon={Monitor}
+            svgKey="tv"
             label="TV"
             subtitle="-2 Sanity"
             onClick={handleTV}
@@ -363,7 +550,7 @@ export function Apartment({
             colorScheme="negative"
           />
           <ApartmentItem
-            icon={Laptop}
+            svgKey="laptop"
             label="Work"
             subtitle="+Cash"
             onClick={handleWork}
@@ -373,7 +560,7 @@ export function Apartment({
             colorScheme="neutral"
           />
           <ApartmentItem
-            icon={Coffee}
+            svgKey="coffee"
             label="Coffee"
             subtitle={`+${upgrades.premiumCoffee ? 30 : 15} Sanity`}
             onClick={handleCoffee}
@@ -383,7 +570,7 @@ export function Apartment({
             colorScheme="positive"
           />
           <ApartmentItem
-            icon={FlaskConical}
+            svgKey="ferment"
             label="Ferment"
             subtitle="+10 Sanity"
             onClick={handleFerment}
@@ -393,7 +580,7 @@ export function Apartment({
             colorScheme="positive"
           />
           <ApartmentItem
-            icon={Smartphone}
+            svgKey="phone"
             label="Phone"
             subtitle="Check Status"
             onClick={handlePhone}
@@ -403,7 +590,7 @@ export function Apartment({
             colorScheme="info"
           />
           <ApartmentItem
-            icon={ShoppingBag}
+            svgKey="shop"
             label="Shop"
             subtitle={`₪${cash}`}
             onClick={() => setShopOpen(true)}
