@@ -103,15 +103,20 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   const [sirenStartTime, setSirenStartTime] = useState(0)
   const [sirenCountdown, setSirenCountdown] = useState(1)
 
+  const [collisionFlash, setCollisionFlash] = useState(false)
+
   const nextObsId = useRef(0)
   const sirenTimerRef = useRef<ReturnType<typeof setTimeout>>()
   const reactionTimerRef = useRef<ReturnType<typeof setTimeout>>()
   const clearTimerRef = useRef<ReturnType<typeof setTimeout>>()
   const distanceRef = useRef(distance)
   distanceRef.current = distance
+  const playerLaneRef = useRef(playerLane)
+  playerLaneRef.current = playerLane
   const sirenStateRef = useRef(sirenState)
   sirenStateRef.current = sirenState
   const completedRef = useRef(false)
+  const lastCollisionTime = useRef(0)
 
   // Fade HUD arrows after 3 seconds
   useEffect(() => {
@@ -150,12 +155,33 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
     setObstacles(initial)
   }, [])
 
-  // Game loop — drive forward
+  // Game loop — drive forward + collision detection
   useEffect(() => {
     if (sirenState === 'active' || sirenState === 'stopped') return
     const timer = setInterval(() => {
       setDistance(prev => {
         const next = prev + SPEED_KM_PER_TICK
+
+        // Collision detection — check if player lane matches any nearby obstacle
+        const now = Date.now()
+        if (now - lastCollisionTime.current > 800) {
+          const scrollUnit = TOTAL_DISTANCE / 60
+          for (const obs of obstacles) {
+            if (obs.type === 'dark') continue // dark patches don't cause collision
+            const relY = obs.y - next / scrollUnit
+            // Hit zone: obstacle is near the player's car position (bottom of screen)
+            if (relY > -0.5 && relY < 1.2 && obs.lane === playerLaneRef.current) {
+              lastCollisionTime.current = now
+              // Collision! Slow down + sanity damage
+              onSanityChange(p => p - 5)
+              setScreenShake(true)
+              setCollisionFlash(true)
+              setTimeout(() => { setScreenShake(false); setCollisionFlash(false) }, 400)
+              return Math.max(0, prev - 1) // knocked back slightly
+            }
+          }
+        }
+
         if (next >= TOTAL_DISTANCE && !completedRef.current) {
           completedRef.current = true
           setTimeout(() => onComplete(), 100)
@@ -164,7 +190,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
       })
     }, 50)
     return () => clearInterval(timer)
-  }, [sirenState, onComplete])
+  }, [sirenState, onComplete, obstacles, onSanityChange])
 
   // Dark patch effect
   useEffect(() => {
@@ -382,6 +408,19 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
           style={{ width: `${progressPct}%` }}
         />
       </div>
+
+      {/* Collision flash */}
+      <AnimatePresence>
+        {collisionFlash && (
+          <motion.div
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 bg-alert-red/20 z-[25] pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
 
       {/* Road scene */}
       <div className="flex-1 relative overflow-hidden bg-noir-bg">

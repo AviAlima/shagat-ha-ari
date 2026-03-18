@@ -321,7 +321,6 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
   return (
     <div
       className="flex flex-col flex-1 select-none"
-      role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.code === 'Space') handleJump(); if (e.code === 'ArrowDown' || e.code === 'KeyS') handleDuck() }}
     >
