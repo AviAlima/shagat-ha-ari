@@ -116,7 +116,7 @@ export function MainMenu({ onStart }: MainMenuProps) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onStart}
-        className="group flex items-center gap-2 px-8 py-3 bg-alert-red text-white font-bold text-sm uppercase tracking-widest rounded border-none cursor-pointer animate-pulse-red hover:bg-alert-red/90 transition-colors"
+        className="group flex items-center gap-2 px-10 py-4 bg-alert-red text-white font-bold text-sm uppercase tracking-widest rounded-lg border-none cursor-pointer animate-pulse-red hover:bg-alert-red/90 transition-colors shadow-[0_0_30px_rgba(255,23,68,0.3)]"
       >
         Start Survival
         <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />

@@ -9,6 +9,8 @@ import {
   Flashlight,
   BedDouble,
   Radio,
+  Check,
+  Backpack,
 } from 'lucide-react'
 
 interface PackingGameProps {
@@ -95,41 +97,47 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
     onDone(Array.from(selected))
   }, [onDone, selected])
 
+  const timerColor = packingTimer <= 5 ? 'text-alert-red' : packingTimer <= 10 ? 'text-neon-amber' : 'text-neon-green'
+  const timerBarColor = packingTimer <= 5 ? 'bg-alert-red' : packingTimer <= 10 ? 'bg-neon-amber' : 'bg-neon-green'
+
   return (
     <div className="flex flex-col flex-1 p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div>
-          <h2 className="text-sm font-bold text-alert-red uppercase tracking-widest">Pack Your Bag</h2>
-          <p className="text-[10px] text-text-muted mt-1">Click items to add/remove. {MAX_SLOTS} slots max.</p>
+          <h2 className="text-base font-bold text-alert-red uppercase tracking-widest">Pack Your Bag</h2>
+          <p className="text-[10px] text-text-muted mt-1">Tap items to add/remove</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1.5">
           <div className="text-xs text-text-muted">
-            Siren: <span className="text-alert-red font-bold tabular-nums">{countdown}s</span>
+            Siren: <span className="text-alert-red font-bold tabular-nums stat-glow">{countdown}s</span>
           </div>
           <div className="text-xs text-text-muted">
-            Packing: <span className="text-neon-amber font-bold tabular-nums">{packingTimer}s</span>
+            Packing: <span className={`${timerColor} font-bold tabular-nums stat-glow`}>{packingTimer}s</span>
           </div>
         </div>
       </div>
 
-      {/* Slot indicator */}
-      <div className="flex items-center gap-1 mb-4">
-        {Array.from({ length: MAX_SLOTS }).map((_, i) => (
-          <div
-            key={i}
-            className={`w-6 h-2 rounded-sm transition-colors ${
-              i < usedSlots ? 'bg-neon-green' : 'bg-noir-border'
-            }`}
-          />
-        ))}
-        <span className="text-[10px] text-text-muted ml-2">{usedSlots}/{MAX_SLOTS}</span>
+      {/* Backpack capacity */}
+      <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-noir-card/60 rounded-lg border border-noir-border/50">
+        <Backpack size={16} className="text-neon-amber" />
+        <div className="flex items-center gap-1 flex-1">
+          {Array.from({ length: MAX_SLOTS }).map((_, i) => (
+            <div
+              key={i}
+              className={`flex-1 h-2.5 rounded-sm transition-all duration-200 ${
+                i < usedSlots ? 'bg-neon-green shadow-[0_0_6px_rgba(0,230,118,0.3)]' : 'bg-noir-border/60'
+              }`}
+            />
+          ))}
+        </div>
+        <span className="text-xs text-text-muted font-bold tabular-nums ml-1">{usedSlots}/{MAX_SLOTS}</span>
       </div>
 
-      {/* Packing timer bar */}
-      <div className="w-full h-1.5 bg-noir-border rounded-full overflow-hidden mb-4">
+      {/* Packing timer bar — changes color */}
+      <div className="w-full h-2 bg-noir-border rounded-full overflow-hidden mb-4">
         <motion.div
-          className="h-full bg-neon-amber rounded-full"
+          className={`h-full ${timerBarColor} rounded-full transition-colors duration-500`}
           initial={{ width: '100%' }}
           animate={{ width: '0%' }}
           transition={{ duration: PACKING_TIME, ease: 'linear' }}
@@ -137,7 +145,7 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
       </div>
 
       {/* Items grid */}
-      <div className="grid grid-cols-4 gap-2 flex-1 content-start">
+      <div className="grid grid-cols-4 gap-2.5 flex-1 content-start">
         {availableItems.map((item) => {
           const isSelected = selected.has(item.id)
           const canFit = usedSlots + item.slots <= MAX_SLOTS
@@ -146,22 +154,30 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
             <motion.button
               key={item.id}
               whileTap={{ scale: 0.9 }}
+              whileHover={!isSelected && canFit ? { scale: 1.05 } : {}}
               onClick={() => toggleItem(item)}
               disabled={!isSelected && !canFit}
-              className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all cursor-pointer ${
+              className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all cursor-pointer ${
                 isSelected
-                  ? 'border-neon-green/60 bg-neon-green/10 shadow-[0_0_10px_rgba(0,230,118,0.1)]'
+                  ? 'border-neon-green/70 bg-neon-green/10 shadow-[0_0_16px_rgba(0,230,118,0.2)]'
                   : canFit
-                    ? 'border-noir-border bg-noir-card/50 hover:border-text-muted/30'
-                    : 'border-noir-border/50 bg-noir-card/20 opacity-40 cursor-not-allowed'
+                    ? 'border-noir-border bg-noir-card/50 hover:border-text-muted/40 hover:bg-noir-card/70'
+                    : 'border-noir-border/30 bg-noir-card/20 opacity-30 cursor-not-allowed'
               }`}
             >
-              <item.icon
-                size={22}
-                className={isSelected ? 'text-neon-green' : 'text-text-muted'}
-              />
-              <span className="text-[10px] text-text-muted leading-tight text-center">{item.label}</span>
-              <span className={`text-[9px] ${isSelected ? 'text-neon-green' : 'text-text-muted/50'}`}>
+              {isSelected && (
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-neon-green rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(0,230,118,0.4)]">
+                  <Check size={12} className="text-noir-bg" strokeWidth={3} />
+                </div>
+              )}
+              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-neon-green/15' : ''}`}>
+                <item.icon
+                  size={26}
+                  className={isSelected ? 'text-neon-green' : canFit ? 'text-text-muted' : 'text-text-muted/30'}
+                />
+              </div>
+              <span className={`text-[10px] leading-tight text-center font-bold ${isSelected ? 'text-neon-green' : 'text-text-muted'}`}>{item.label}</span>
+              <span className={`text-[9px] ${isSelected ? 'text-neon-green/70' : 'text-text-muted/40'}`}>
                 {item.slots} slot{item.slots > 1 ? 's' : ''}
               </span>
             </motion.button>
@@ -174,9 +190,9 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={handleGo}
-        className="mt-4 w-full py-3 bg-alert-red text-white font-bold text-sm uppercase tracking-widest rounded cursor-pointer hover:bg-alert-red/80 transition-colors"
+        className="mt-4 w-full py-3.5 bg-alert-red text-white font-bold text-sm uppercase tracking-widest rounded-lg cursor-pointer hover:bg-alert-red/80 transition-colors shadow-[0_0_20px_rgba(255,23,68,0.3)] animate-pulse-red"
       >
-        Go! Run to Shelter
+        GO! Run to Shelter
       </motion.button>
     </div>
   )

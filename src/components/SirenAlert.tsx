@@ -25,6 +25,12 @@ export function SirenAlert({ countdown, onCountdownTick, onPackingStart }: Siren
     return () => clearTimeout(timer)
   }, [onPackingStart])
 
+  const urgencyText = countdown > 45
+    ? 'GET READY!'
+    : countdown > 25
+      ? 'MOVE NOW!'
+      : 'RUN!'
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -32,38 +38,58 @@ export function SirenAlert({ countdown, onCountdownTick, onPackingStart }: Siren
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-30 flex items-center justify-center"
     >
-      {/* Red flashing background */}
+      {/* Full-screen red flash — more intense */}
       <motion.div
         animate={{
-          backgroundColor: ['rgba(255,23,68,0.15)', 'rgba(255,23,68,0.3)', 'rgba(255,23,68,0.15)'],
+          backgroundColor: ['rgba(255,23,68,0.2)', 'rgba(255,23,68,0.5)', 'rgba(255,23,68,0.2)'],
         }}
-        transition={{ duration: 0.5, repeat: Infinity }}
+        transition={{ duration: 0.3, repeat: Infinity }}
         className="absolute inset-0"
       />
 
-      {/* Shaking content */}
+      {/* Vignette overlay for intensity */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,rgba(0,0,0,0.6)_100%)]" />
+
+      {/* Shaking content — more aggressive shake with Y axis */}
       <motion.div
-        animate={{ x: [0, -4, 4, -4, 4, 0] }}
-        transition={{ duration: 0.4, repeat: Infinity }}
-        className="relative flex flex-col items-center gap-4 z-10"
+        animate={{
+          x: [0, -8, 6, -10, 8, -4, 6, 0],
+          y: [0, -3, 4, -2, 5, -4, 2, 0],
+        }}
+        transition={{ duration: 0.35, repeat: Infinity }}
+        className="relative flex flex-col items-center gap-6 z-10"
       >
         <motion.div
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 0.6, repeat: Infinity }}
+          animate={{ scale: [1, 1.3, 1], rotate: [0, -5, 5, 0] }}
+          transition={{ duration: 0.5, repeat: Infinity }}
         >
-          <Siren size={64} className="text-alert-red" />
+          <Siren size={80} className="text-alert-red drop-shadow-[0_0_30px_rgba(255,23,68,0.8)]" />
         </motion.div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-alert-red text-center animate-pulse-red px-4 py-2">
-          ALERT! ALERT! INCOMING!
+        <h1 className="text-4xl md:text-6xl font-bold text-alert-red text-center animate-pulse-red px-6 py-3">
+          ALERT! INCOMING!
         </h1>
 
-        <div className="text-5xl font-bold text-white tabular-nums">
-          {countdown}s
+        <div className="flex flex-col items-center gap-2">
+          <motion.div
+            className="text-7xl md:text-8xl font-bold text-white tabular-nums stat-glow"
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+          >
+            {countdown}s
+          </motion.div>
+          <motion.span
+            key={urgencyText}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-lg md:text-xl font-bold text-alert-red uppercase tracking-widest stat-glow"
+          >
+            {urgencyText}
+          </motion.span>
         </div>
 
-        <p className="text-sm text-text-muted animate-pulse">
-          Get to shelter NOW — Packing in progress...
+        <p className="text-sm text-text-muted/80 animate-pulse tracking-wider">
+          Get to shelter NOW
         </p>
       </motion.div>
     </motion.div>

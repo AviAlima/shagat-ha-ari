@@ -245,19 +245,31 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
         )}
       </AnimatePresence>
 
-      {/* Siren message */}
+      {/* Siren message — full screen overlay, unmissable */}
       <AnimatePresence>
         {sirenState === 'active' && (
           <motion.div
-            initial={{ scale: 0.5, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.5, opacity: 0 }}
-            className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 z-30 flex flex-col items-center gap-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-30 flex items-center justify-center bg-noir-bg/60 backdrop-blur-[2px]"
+            onClick={handleSirenStop}
           >
-            <span className="text-2xl font-bold text-alert-red animate-pulse-red px-4 py-2">
-              STOP! GET OUT!
-            </span>
-            <span className="text-xs text-text-muted">Press SPACE to stop and lie flat</span>
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              className="flex flex-col items-center gap-4 p-8 rounded-xl border-2 border-alert-red/60 bg-noir-bg/90 shadow-[0_0_60px_rgba(255,23,68,0.4)]"
+            >
+              <motion.span
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ duration: 0.4, repeat: Infinity }}
+                className="text-3xl md:text-4xl font-bold text-alert-red animate-pulse-red px-4 py-2"
+              >
+                STOP! GET OUT!
+              </motion.span>
+              <span className="text-sm text-text-muted">Press SPACE or tap to stop and lie flat</span>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -280,7 +292,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-noir-border z-10">
         <div className="text-xs text-text-muted">
-          Distance: <span className="text-neon-green font-bold tabular-nums">{Math.round(distance)}km</span> / {TOTAL_DISTANCE}km
+          Distance: <span className="text-neon-green font-bold tabular-nums stat-glow">{Math.round(distance)}km</span> / {TOTAL_DISTANCE}km
         </div>
         <div className="text-xs text-text-muted">
           Route 1 — <span className="text-neon-amber">Heading to Parents</span>
@@ -297,8 +309,25 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
 
       {/* Road scene */}
       <div className="flex-1 relative overflow-hidden bg-noir-bg">
-        {/* Road surface */}
-        <div className="absolute inset-x-[10%] inset-y-0 bg-noir-surface border-l-2 border-r-2 border-noir-border" />
+        {/* Road surface with subtle gradient */}
+        <div className="absolute inset-x-[10%] inset-y-0 bg-noir-surface border-l-2 border-r-2 border-noir-border">
+          {/* Road edge glow */}
+          <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-neon-amber/5 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-neon-amber/5 to-transparent" />
+        </div>
+
+        {/* Center dashed line */}
+        <div className="absolute inset-y-0" style={{ left: '50%' }}>
+          {Array.from({ length: 20 }).map((_, i) => (
+            <motion.div
+              key={`center-${i}`}
+              className="absolute w-0.5 h-6 bg-neon-amber/20 rounded-full"
+              style={{
+                top: `${((i * 7 - ((distance * 8) % 140) + 140) % 140) - 10}%`,
+              }}
+            />
+          ))}
+        </div>
 
         {/* Lane markings — animated scrolling */}
         {[35, 65].map((x) => (

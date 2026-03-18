@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { NewsTicker } from './components/NewsTicker'
 import { StatsBar } from './components/StatsBar'
 import { MainMenu } from './components/MainMenu'
@@ -137,7 +137,7 @@ function App() {
 
   const handleContinue = useCallback(() => {
     setInventory([])
-    if (sirensSurvivedRef.current === 3) {
+    if (sirensSurvivedRef.current >= 3) {
       setGamePhase('evacuation_choice')
     } else {
       setGamePhase('apartment')
@@ -175,113 +175,122 @@ function App() {
       {showStats && <StatsBar sanity={game.sanity} battery={game.battery} cash={game.cash} />}
 
       <AnimatePresence mode="wait">
-        {game.gamePhase === 'menu' && (
-          <MainMenu onStart={handleStart} />
-        )}
+        <motion.div
+          key={game.gamePhase}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex flex-col flex-1"
+        >
+          {game.gamePhase === 'menu' && (
+            <MainMenu onStart={handleStart} />
+          )}
 
-        {game.gamePhase === 'apartment' && (
-          <Apartment
-            sanity={game.sanity}
-            battery={game.battery}
-            cash={game.cash}
-            upgrades={game.upgrades}
-            onSanityChange={setSanity}
-            onCashChange={setCash}
-            onUpgrade={setUpgrade}
-            onAdvanceTime={advanceTime}
-          />
-        )}
+          {game.gamePhase === 'apartment' && (
+            <Apartment
+              sanity={game.sanity}
+              battery={game.battery}
+              cash={game.cash}
+              upgrades={game.upgrades}
+              onSanityChange={setSanity}
+              onCashChange={setCash}
+              onUpgrade={setUpgrade}
+              onAdvanceTime={advanceTime}
+            />
+          )}
 
-        {game.gamePhase === 'siren' && (
-          <SirenAlert
-            countdown={game.sirenCountdown}
-            onCountdownTick={handleCountdownTick}
-            onPackingStart={handlePackingStart}
-          />
-        )}
+          {game.gamePhase === 'siren' && (
+            <SirenAlert
+              countdown={game.sirenCountdown}
+              onCountdownTick={handleCountdownTick}
+              onPackingStart={handlePackingStart}
+            />
+          )}
 
-        {game.gamePhase === 'packing' && (
-          <PackingGame
-            countdown={game.sirenCountdown}
-            onCountdownTick={handleCountdownTick}
-            onDone={handlePackingDone}
-          />
-        )}
+          {game.gamePhase === 'packing' && (
+            <PackingGame
+              countdown={game.sirenCountdown}
+              onCountdownTick={handleCountdownTick}
+              onDone={handlePackingDone}
+            />
+          )}
 
-        {game.gamePhase === 'running' && (
-          <ShelterRun
-            countdown={game.sirenCountdown}
-            hasSneakers={game.upgrades.sneakers}
-            onCountdownTick={handleCountdownTick}
-            onReachShelter={handleReachShelter}
-            onFail={handleFail}
-          />
-        )}
+          {game.gamePhase === 'running' && (
+            <ShelterRun
+              countdown={game.sirenCountdown}
+              hasSneakers={game.upgrades.sneakers}
+              onCountdownTick={handleCountdownTick}
+              onReachShelter={handleReachShelter}
+              onFail={handleFail}
+            />
+          )}
 
-        {game.gamePhase === 'shelter' && (
-          <ShelterSafe
-            inventory={game.inventory}
-            timeSurvived={game.timeSurvived}
-            onContinue={handleContinue}
-          />
-        )}
+          {game.gamePhase === 'shelter' && (
+            <ShelterSafe
+              inventory={game.inventory}
+              timeSurvived={game.timeSurvived}
+              onContinue={handleContinue}
+            />
+          )}
 
-        {game.gamePhase === 'evacuation_choice' && (
-          <EvacuationChoice
-            onStay={handleStay}
-            onDrive={handleDrive}
-          />
-        )}
+          {game.gamePhase === 'evacuation_choice' && (
+            <EvacuationChoice
+              onStay={handleStay}
+              onDrive={handleDrive}
+            />
+          )}
 
-        {game.gamePhase === 'driving' && (
-          <DrivingGame
-            sanity={game.sanity}
-            onSanityChange={setSanity}
-            onComplete={handleDrivingComplete}
-            onFail={handleFail}
-          />
-        )}
+          {game.gamePhase === 'driving' && (
+            <DrivingGame
+              sanity={game.sanity}
+              onSanityChange={setSanity}
+              onComplete={handleDrivingComplete}
+              onFail={handleFail}
+            />
+          )}
 
-        {game.gamePhase === 'mamad_arrival' && (
-          <MamadArrival
-            onContinue={handleMamadContinue}
-          />
-        )}
+          {game.gamePhase === 'mamad_arrival' && (
+            <MamadArrival
+              onContinue={handleMamadContinue}
+            />
+          )}
 
-        {game.gamePhase === 'phase3' && (
-          <MamadRoom
-            sanity={game.sanity}
-            battery={game.battery}
-            cash={game.cash}
-            upgrades={game.upgrades}
-            familyMorale={game.familyMorale}
-            supplies={game.supplies}
-            mamadDay={game.mamadDay}
-            onSanityChange={setSanity}
-            onFamilyMoraleChange={setFamilyMorale}
-            onSuppliesChange={setSupplies}
-            onBatteryChange={setBattery}
-            onAdvanceDay={handleAdvanceDay}
-          />
-        )}
+          {game.gamePhase === 'phase3' && (
+            <MamadRoom
+              sanity={game.sanity}
+              battery={game.battery}
+              cash={game.cash}
+              upgrades={game.upgrades}
+              familyMorale={game.familyMorale}
+              supplies={game.supplies}
+              mamadDay={game.mamadDay}
+              onSanityChange={setSanity}
+              onFamilyMoraleChange={setFamilyMorale}
+              onSuppliesChange={setSupplies}
+              onBatteryChange={setBattery}
+              onAdvanceDay={handleAdvanceDay}
+            />
+          )}
 
-        {game.gamePhase === 'mamad_gameover' && mamadGameOverReason && (
-          <MamadGameOver
-            reason={mamadGameOverReason}
-            daysInMamad={game.mamadDay}
-            timeSurvived={game.timeSurvived}
-            onRetry={handleRetry}
-          />
-        )}
+          {game.gamePhase === 'mamad_gameover' && mamadGameOverReason && (
+            <MamadGameOver
+              reason={mamadGameOverReason}
+              daysInMamad={game.mamadDay}
+              timeSurvived={game.timeSurvived}
+              onRetry={handleRetry}
+            />
+          )}
 
-        {game.gamePhase === 'gameover' && (
-          <GameOver
-            timeSurvived={game.timeSurvived}
-            cashEarned={game.cashEarned}
-            inventory={game.inventory}
-            onRetry={handleRetry}
-          />
-        )}
+          {game.gamePhase === 'gameover' && (
+            <GameOver
+              timeSurvived={game.timeSurvived}
+              cashEarned={game.cashEarned}
+              inventory={game.inventory}
+              onRetry={handleRetry}
+            />
+          )}
+        </motion.div>
       </AnimatePresence>
 
       {/* Phase 3 event overlay — renders on top of MamadRoom */}

@@ -25,28 +25,32 @@ function StatItem({
 
   return (
     <div className="flex items-center gap-2">
-      <Icon size={16} className={warning ? 'text-alert-red animate-pulse' : color} />
+      <div className={`p-1 rounded ${warning ? 'bg-alert-red/10' : ''}`}>
+        <Icon size={16} className={warning ? 'text-alert-red animate-pulse' : color} />
+      </div>
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] uppercase tracking-widest text-text-muted">{label}</span>
-        <div className="w-24 h-1.5 bg-noir-border rounded-full overflow-hidden">
+        <div className="flex items-center gap-1.5">
+          <span className="text-[9px] uppercase tracking-widest text-text-muted font-bold">{label}</span>
+          <span className={`text-[10px] font-bold tabular-nums ${warning ? 'text-alert-red stat-glow' : color}`}>
+            {label === 'Cash' ? `₪${value}` : `${pct}%`}
+          </span>
+        </div>
+        <div className="w-20 h-1.5 bg-noir-border rounded-full overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${
-              warning ? 'bg-alert-red' : color.replace('text-', 'bg-')
+              warning ? 'bg-alert-red shadow-[0_0_6px_rgba(255,23,68,0.5)]' : color.replace('text-', 'bg-')
             }`}
             style={{ width: `${pct}%` }}
           />
         </div>
       </div>
-      <span className={`text-xs font-bold tabular-nums ${warning ? 'text-alert-red' : color}`}>
-        {label === 'Cash' ? `₪${value}` : `${pct}%`}
-      </span>
     </div>
   )
 }
 
 export function StatsBar({ sanity, battery, cash }: StatsBarProps) {
   return (
-    <div className="flex items-center justify-center gap-8 py-3 px-4 bg-noir-surface/50 border-b border-noir-border">
+    <div className="flex items-center justify-between gap-4 py-2.5 px-4 bg-noir-surface/60 border-b border-noir-border/60 backdrop-blur-sm">
       <StatItem
         icon={Brain}
         label="Sanity"

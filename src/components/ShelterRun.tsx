@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface ShelterRunProps {
   countdown: number
@@ -72,6 +72,7 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
   const jumpingRef = useRef(false)
   const lastHitTime = useRef(0)
   const reachedRef = useRef(false)
+  const shelterCalledRef = useRef(false)
 
   // Generate obstacles
   useEffect(() => {
@@ -117,9 +118,10 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     return () => clearInterval(timer)
   }, [speed, obstacles])
 
-  // Detect reaching shelter
+  // Detect reaching shelter — fire exactly once
   useEffect(() => {
-    if (distance >= 100 && reachedRef.current) {
+    if (distance >= 100 && reachedRef.current && !shelterCalledRef.current) {
+      shelterCalledRef.current = true
       onReachShelter()
     }
   }, [distance, onReachShelter])
@@ -182,10 +184,10 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-noir-border">
         <div className="text-xs text-text-muted">
-          Distance: <span className="text-neon-green font-bold tabular-nums">{Math.round(progressPct)}m</span> / 100m
+          Distance: <span className="text-neon-green font-bold tabular-nums stat-glow">{Math.round(progressPct)}m</span> / 100m
         </div>
         <div className="text-xs text-text-muted">
-          Siren: <span className="text-alert-red font-bold tabular-nums">{countdown}s</span>
+          Siren: <span className="text-alert-red font-bold tabular-nums stat-glow">{countdown}s</span>
         </div>
       </div>
 
@@ -198,29 +200,66 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
       </div>
 
       {/* Runner scene */}
-      <div className={`flex-1 relative overflow-hidden bg-noir-bg ${hit ? 'bg-alert-red/10' : ''} transition-colors duration-200`}>
-        {/* Ground line */}
+      <div className={`flex-1 relative overflow-hidden bg-noir-bg transition-colors duration-150`}>
+        {/* Background flash on hit */}
+        <AnimatePresence>
+          {hit && (
+            <motion.div
+              initial={{ opacity: 0.5 }}
+              animate={{ opacity: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 bg-alert-red/20 z-10 pointer-events-none"
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Ceiling line for hallway feel */}
+        <div className="absolute top-20 left-0 right-0 h-px bg-noir-border/20" />
+
+        {/* Wall texture - left */}
+        <div className="absolute top-20 bottom-16 left-0 w-[5%] bg-noir-surface/30 border-r border-noir-border/20" />
+        {/* Wall texture - right */}
+        <div className="absolute top-20 bottom-16 right-0 w-[5%] bg-noir-surface/30 border-l border-noir-border/20" />
+
+        {/* Ground with texture pattern */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-noir-surface/50 border-t border-noir-border/40" />
         <div className="absolute bottom-16 left-0 right-0 h-px bg-noir-border" />
 
-        {/* Hallway lines for depth */}
-        <div className="absolute bottom-16 left-0 right-0">
-          {Array.from({ length: 20 }).map((_, i) => (
+        {/* Hallway floor lines for depth/movement */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden">
+          {Array.from({ length: 25 }).map((_, i) => (
             <div
               key={i}
-              className="absolute bottom-0 w-px h-2 bg-noir-border/30"
-              style={{ left: `${((i * 8 - (distance * 3) % 160 + 160) % 160)}%` }}
+              className="absolute bottom-0 w-px h-16 bg-noir-border/20"
+              style={{ left: `${((i * 6 - (distance * 4) % 150 + 150) % 150)}%` }}
             />
           ))}
+          {/* Horizontal floor lines */}
+          <div className="absolute bottom-4 left-0 right-0 h-px bg-noir-border/15" />
+          <div className="absolute bottom-8 left-0 right-0 h-px bg-noir-border/10" />
+          <div className="absolute bottom-12 left-0 right-0 h-px bg-noir-border/5" />
         </div>
 
-        {/* Player */}
+        {/* Player with subtle bobble while running */}
         <motion.div
-          className="absolute bottom-16"
+          className="absolute bottom-16 z-5"
           style={{ left: `${PLAYER_X}%` }}
-          animate={{ y: jumping ? -40 : 0 }}
-          transition={{ duration: JUMP_DURATION / 1000, ease: 'easeOut' }}
+          animate={{
+            y: jumping ? -40 : 0,
+            ...(jumping ? {} : { translateY: [0, -2, 0] }),
+          }}
+          transition={
+            jumping
+              ? { duration: JUMP_DURATION / 1000, ease: 'easeOut' }
+              : { duration: 0.25, repeat: Infinity, ease: 'easeInOut' }
+          }
         >
           <PlayerSvg jumping={jumping} />
+          {/* Shadow under player */}
+          {!jumping && (
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-noir-border/30 rounded-full blur-[1px]" />
+          )}
         </motion.div>
 
         {/* Obstacles */}
@@ -240,21 +279,28 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
 
         {/* Shelter indicator at the end */}
         {100 - distance < 30 && (
-          <div
+          <motion.div
             className="absolute bottom-16 flex flex-col items-center"
             style={{ left: `${PLAYER_X + (100 - distance)}%` }}
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1, repeat: Infinity }}
           >
-            <div className="text-[10px] text-neon-green font-bold mb-1">SHELTER</div>
-            <div className="w-10 h-12 border-2 border-neon-green rounded-sm bg-neon-green/10" />
-          </div>
+            <div className="text-xs text-neon-green font-bold mb-1 stat-glow tracking-wider">SHELTER</div>
+            <div className="w-10 h-12 border-2 border-neon-green rounded-sm bg-neon-green/10 shadow-[0_0_16px_rgba(0,230,118,0.3)]" />
+          </motion.div>
         )}
 
-        {/* Tap instruction */}
-        <div className="absolute bottom-4 left-0 right-0 text-center">
-          <span className="text-[10px] text-text-muted/50 uppercase tracking-widest">
+        {/* Tap instruction — prominent then fading */}
+        <motion.div
+          className="absolute bottom-4 left-0 right-0 text-center"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0.3 }}
+          transition={{ delay: 2, duration: 2 }}
+        >
+          <span className="text-xs text-text-muted bg-noir-bg/70 px-4 py-1.5 rounded-full border border-noir-border/50 uppercase tracking-widest">
             Tap / Space to jump
           </span>
-        </div>
+        </motion.div>
       </div>
     </div>
   )

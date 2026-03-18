@@ -133,45 +133,55 @@ export function MamadGameOver({ reason, daysInMamad, timeSurvived, onRetry }: Ma
 
       {!isWin && <div className="mb-8" />}
 
-      {/* Stats */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: isWin ? 0.9 : 0.7 }}
-        className="w-full max-w-xs flex flex-col gap-3 mb-8"
-      >
-        <div className="flex items-center justify-between px-4 py-2 bg-noir-card border border-noir-border rounded">
+      {/* Stats — animate in one by one */}
+      <div className="w-full max-w-xs flex flex-col gap-3 mb-8">
+        <motion.div
+          initial={{ x: -30, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: isWin ? 0.9 : 0.7 }}
+          className="flex items-center justify-between px-4 py-2.5 bg-noir-card border border-noir-border rounded-lg"
+        >
           <span className="text-xs text-text-muted">Days in Mamad</span>
-          <span className="text-xs text-neon-amber font-bold tabular-nums">
+          <span className="text-xs text-neon-amber font-bold tabular-nums stat-glow">
             <CountUp target={daysInMamad} />
           </span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 bg-noir-card border border-noir-border rounded">
+        </motion.div>
+        <motion.div
+          initial={{ x: -30, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: isWin ? 1.05 : 0.85 }}
+          className="flex items-center justify-between px-4 py-2.5 bg-noir-card border border-noir-border rounded-lg"
+        >
           <span className="text-xs text-text-muted">Time Survived</span>
-          <span className="text-xs text-neon-amber font-bold tabular-nums">
+          <span className="text-xs text-neon-amber font-bold tabular-nums stat-glow">
             <CountUp target={minutes} />:{String(seconds).padStart(2, '0')}
           </span>
-        </div>
+        </motion.div>
         {isWin && (
-          <div className="flex items-center justify-between px-4 py-2 bg-noir-card border border-noir-border rounded">
+          <motion.div
+            initial={{ x: -30, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="flex items-center justify-between px-4 py-2.5 bg-noir-card border border-neon-green/20 rounded-lg"
+          >
             <span className="text-xs text-text-muted">Family Kept Safe</span>
-            <span className="text-xs text-neon-green font-bold">Everyone</span>
-          </div>
+            <span className="text-xs text-neon-green font-bold stat-glow">Everyone</span>
+          </motion.div>
         )}
-      </motion.div>
+      </div>
 
-      {/* Retry button */}
+      {/* Retry button — pulses to draw attention */}
       <motion.button
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: isWin ? 1.1 : 0.9 }}
+        transition={{ delay: isWin ? 1.3 : 1.0 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onRetry}
-        className={`flex items-center gap-2 px-8 py-3 font-bold text-sm uppercase tracking-widest rounded cursor-pointer transition-colors ${
+        className={`flex items-center gap-2 px-8 py-3.5 font-bold text-sm uppercase tracking-widest rounded-lg cursor-pointer transition-colors ${
           isWin
-            ? 'bg-neon-green text-noir-bg hover:bg-neon-green/80'
-            : 'bg-alert-red text-white hover:bg-alert-red/80'
+            ? 'bg-neon-green text-noir-bg hover:bg-neon-green/80 glow-green'
+            : 'bg-alert-red text-white hover:bg-alert-red/80 animate-pulse-red'
         }`}
       >
         <RotateCcw size={16} />

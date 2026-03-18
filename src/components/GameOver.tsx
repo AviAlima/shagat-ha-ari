@@ -46,34 +46,35 @@ export function GameOver({ timeSurvived, cashEarned, inventory, onRetry }: GameO
         You didn't reach the shelter in time. The siren countdown reached zero.
       </motion.p>
 
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.7 }}
-        className="w-full max-w-xs flex flex-col gap-3 mb-8"
-      >
-        <div className="flex items-center justify-between px-4 py-2 bg-noir-card border border-noir-border rounded">
-          <span className="text-xs text-text-muted">Time Survived</span>
-          <span className="text-xs text-neon-amber font-bold tabular-nums">{minutes}:{String(seconds).padStart(2, '0')}</span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 bg-noir-card border border-noir-border rounded">
-          <span className="text-xs text-text-muted">Cash Earned</span>
-          <span className="text-xs text-neon-amber font-bold">₪{cashEarned}</span>
-        </div>
-        <div className="flex items-center justify-between px-4 py-2 bg-noir-card border border-noir-border rounded">
-          <span className="text-xs text-text-muted">Items Packed</span>
-          <span className="text-xs text-neon-amber font-bold">{inventory.length}</span>
-        </div>
-      </motion.div>
+      {[
+        { label: 'Time Survived', value: `${minutes}:${String(seconds).padStart(2, '0')}`, delay: 0.7 },
+        { label: 'Cash Earned', value: `₪${cashEarned}`, delay: 0.85 },
+        { label: 'Items Packed', value: `${inventory.length}`, delay: 1.0 },
+      ].map(({ label, value, delay }) => (
+        <motion.div
+          key={label}
+          initial={{ x: -30, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay }}
+          className="w-full max-w-xs"
+        >
+          <div className="flex items-center justify-between px-4 py-2.5 mb-2 bg-noir-card border border-noir-border rounded-lg">
+            <span className="text-xs text-text-muted">{label}</span>
+            <span className="text-xs text-neon-amber font-bold tabular-nums stat-glow">{value}</span>
+          </div>
+        </motion.div>
+      ))}
+
+      <div className="mb-4" />
 
       <motion.button
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.9 }}
+        transition={{ delay: 1.2 }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={onRetry}
-        className="flex items-center gap-2 px-8 py-3 bg-alert-red text-white font-bold text-sm uppercase tracking-widest rounded cursor-pointer hover:bg-alert-red/80 transition-colors"
+        className="flex items-center gap-2 px-8 py-3.5 bg-alert-red text-white font-bold text-sm uppercase tracking-widest rounded-lg cursor-pointer hover:bg-alert-red/80 transition-colors animate-pulse-red"
       >
         <RotateCcw size={16} />
         Try Again
