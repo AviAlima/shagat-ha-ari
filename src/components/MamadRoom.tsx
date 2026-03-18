@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Package, Radio, BatteryCharging, Dices } from 'lucide-react'
+import { Package, Radio, BatteryCharging, Dices, FlaskConical } from 'lucide-react'
 import type { Upgrades } from '../hooks/useGameState'
+import { FermentationLab } from './FermentationLab'
 
 interface MamadRoomProps {
   sanity: number
@@ -340,9 +341,13 @@ export function MamadRoom({
   const [radioText, setRadioText] = useState<string | null>(null)
   const [chargerText, setChargerText] = useState<string | null>(null)
   const [cardText, setCardText] = useState<string | null>(null)
+  const [labText, setLabText] = useState<string | null>(null)
 
   // Brother choice modal
   const [brotherChoiceOpen, setBrotherChoiceOpen] = useState(false)
+
+  // Fermentation Lab
+  const [labOpen, setLabOpen] = useState(false)
 
   // Cooldowns in ms
   const [momCooldown, setMomCooldown] = useState(0)
@@ -353,6 +358,7 @@ export function MamadRoom({
   const [radioCooldown, setRadioCooldown] = useState(0)
   const [chargerCooldown, setChargerCooldown] = useState(0)
   const [cardCooldown, setCardCooldown] = useState(0)
+  const [labCooldown, setLabCooldown] = useState(0)
 
   const momMax = 10000
   const dadMax = 15000
@@ -362,6 +368,7 @@ export function MamadRoom({
   const radioMax = 12000
   const chargerMax = 60000
   const cardMax = 40000
+  const labMax = 60000
 
   // Distant rumble flash effect
   const [flash, setFlash] = useState(false)
@@ -390,6 +397,7 @@ export function MamadRoom({
       setRadioCooldown(prev => Math.max(0, prev - 100))
       setChargerCooldown(prev => Math.max(0, prev - 100))
       setCardCooldown(prev => Math.max(0, prev - 100))
+      setLabCooldown(prev => Math.max(0, prev - 100))
     }, 100)
     return () => clearInterval(timer)
   }, [])
@@ -476,6 +484,25 @@ export function MamadRoom({
     setCardCooldown(cardMax)
     showStatus(setCardText, '+3 Sanity, +4 Morale')
   }, [cardCooldown, onSanityChange, onFamilyMoraleChange, showStatus])
+
+  const handleLabOpen = useCallback(() => {
+    if (labCooldown > 0) return
+    setLabOpen(true)
+  }, [labCooldown])
+
+  const handleLabComplete = useCallback((success: boolean) => {
+    setLabOpen(false)
+    setLabCooldown(labMax)
+    if (success) {
+      onSanityChange(prev => prev + 15)
+      onSuppliesChange(prev => prev + 8)
+      showStatus(setLabText, '+15 Sanity, +8 Supplies')
+    } else {
+      onSanityChange(prev => prev - 8)
+      onFamilyMoraleChange(prev => prev + 5)
+      showStatus(setLabText, '-8 Sanity, +5 Morale')
+    }
+  }, [onSanityChange, onSuppliesChange, onFamilyMoraleChange, showStatus])
 
   return (
     <motion.div
@@ -592,7 +619,7 @@ export function MamadRoom({
         </div>
 
         {/* Interactive Items Row */}
-        <div className="grid grid-cols-3 gap-1.5 mt-auto">
+        <div className="grid grid-cols-4 gap-1.5 mt-auto">
           {/* Supply Shelf */}
           <div className="relative">
             <MamadItem
@@ -636,6 +663,16 @@ export function MamadRoom({
               <span className="text-[9px] text-text-muted/30 uppercase tracking-wider mt-1">No Powerbank</span>
             </div>
           )}
+
+          {/* Fermentation Lab */}
+          <MamadItem
+            icon={FlaskConical}
+            label="Ferment"
+            onClick={handleLabOpen}
+            disabled={labCooldown > 0}
+            cooldownPct={(labCooldown / labMax) * 100}
+            statusText={labText}
+          />
         </div>
       </div>
 
@@ -687,6 +724,13 @@ export function MamadRoom({
             onClose={() => setBrotherChoiceOpen(false)}
             suppliesLow={supplies < 2}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Fermentation Lab overlay */}
+      <AnimatePresence>
+        {labOpen && (
+          <FermentationLab onComplete={handleLabComplete} />
         )}
       </AnimatePresence>
     </motion.div>

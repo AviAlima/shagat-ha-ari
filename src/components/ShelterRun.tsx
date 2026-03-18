@@ -19,8 +19,9 @@ interface ShelterRunProps {
 
 interface Obstacle {
   id: number
-  x: number
-  type: 'box' | 'person' | 'dark'
+  lane: number
+  y: number // 0-100 distance along the path
+  type: 'person' | 'debris' | 'dark'
 }
 
 interface SfxText {
@@ -31,70 +32,67 @@ interface SfxText {
   rotation: number
 }
 
+const LANE_COUNT = 3
+const TOTAL_DISTANCE = 100
 const BASE_SPEED = 0.65
 const SNEAKER_SPEED = 0.9
-const JUMP_DURATION = 500
-const DUCK_DURATION = 400
-const OBSTACLE_WIDTH = 3.5
-const PLAYER_X = 15
-const HIT_COOLDOWN = 400
-const GRAB_DURATION = 2500
+const HIT_COOLDOWN = 500
+const HIT_KNOCKBACK = 3
+const GRAB_DURATION = 2000
 const CRATE_PROXIMITY = 3
+const OBSTACLE_COUNT = 11
 
 const SFX_WORDS = ['BOOM', 'WHIZ', 'CRACK', 'SHHH']
 
-function PlayerSvg({ jumping, ducking }: { jumping: boolean; ducking: boolean }) {
-  if (ducking) {
-    return (
-      <svg viewBox="0 0 32 24" className="w-10 h-6" fill="none">
-        <circle cx="8" cy="10" r="4" stroke="#e0e0e0" strokeWidth="1.5" fill="#12121a" />
-        <line x1="12" y1="10" x2="24" y2="12" stroke="#e0e0e0" strokeWidth="1.5" />
-        <line x1="16" y1="12" x2="14" y2="18" stroke="#e0e0e0" strokeWidth="1.5" />
-        <line x1="16" y1="12" x2="20" y2="18" stroke="#e0e0e0" strokeWidth="1.5" />
-        <line x1="24" y1="12" x2="22" y2="20" stroke="#e0e0e0" strokeWidth="1.5" />
-        <line x1="24" y1="12" x2="28" y2="20" stroke="#e0e0e0" strokeWidth="1.5" />
-      </svg>
-    )
-  }
+function PlayerSvg() {
   return (
-    <svg viewBox="0 0 24 48" className="w-8 h-16" fill="none">
-      <circle cx="12" cy="6" r="5" stroke="#e0e0e0" strokeWidth="1.5" fill="#12121a" />
-      <line x1="12" y1="11" x2="12" y2="28" stroke="#e0e0e0" strokeWidth="1.5" />
-      <line x1="12" y1="16" x2="4" y2={jumping ? '20' : '24'} stroke="#e0e0e0" strokeWidth="1.5" />
-      <line x1="12" y1="16" x2="20" y2={jumping ? '20' : '24'} stroke="#e0e0e0" strokeWidth="1.5" />
-      <line x1="12" y1="28" x2="6" y2={jumping ? '36' : '44'} stroke="#e0e0e0" strokeWidth="1.5" />
-      <line x1="12" y1="28" x2="18" y2={jumping ? '36' : '44'} stroke="#e0e0e0" strokeWidth="1.5" />
+    <svg viewBox="0 0 24 32" className="w-8 h-10" fill="none">
+      {/* Head (top-down, facing up) */}
+      <circle cx="12" cy="8" r="5" stroke="#e0e0e0" strokeWidth="1.5" fill="#12121a" />
+      {/* Body line */}
+      <line x1="12" y1="13" x2="12" y2="24" stroke="#e0e0e0" strokeWidth="1.5" />
+      {/* Arms */}
+      <line x1="12" y1="16" x2="5" y2="19" stroke="#e0e0e0" strokeWidth="1.5" />
+      <line x1="12" y1="16" x2="19" y2="19" stroke="#e0e0e0" strokeWidth="1.5" />
+      {/* Legs */}
+      <line x1="12" y1="24" x2="7" y2="30" stroke="#e0e0e0" strokeWidth="1.5" />
+      <line x1="12" y1="24" x2="17" y2="30" stroke="#e0e0e0" strokeWidth="1.5" />
     </svg>
   )
 }
 
-function ObstacleSvg({ type }: { type: 'box' | 'person' | 'dark' }) {
-  if (type === 'box') {
-    return (
-      <svg viewBox="0 0 20 20" className="w-8 h-8">
-        <rect x="2" y="4" width="16" height="14" fill="#1a1a2e" stroke="#ff1744" strokeWidth="1" rx="1" />
-        <line x1="2" y1="10" x2="18" y2="10" stroke="#ff174480" strokeWidth="0.5" />
-      </svg>
-    )
-  }
-  if (type === 'person') {
-    return (
-      <svg viewBox="0 0 20 32" className="w-6 h-10">
-        <circle cx="10" cy="5" r="4" stroke="#888" strokeWidth="1" fill="#12121a" />
-        <line x1="10" y1="9" x2="10" y2="20" stroke="#888" strokeWidth="1" />
-        <line x1="10" y1="20" x2="5" y2="30" stroke="#888" strokeWidth="1" />
-        <line x1="10" y1="20" x2="15" y2="30" stroke="#888" strokeWidth="1" />
-      </svg>
-    )
-  }
+function NeighborSvg() {
   return (
-    <svg viewBox="0 0 24 10" className="w-10 h-4">
-      <ellipse cx="12" cy="5" rx="11" ry="4" fill="#06060a" opacity="0.8" />
+    <svg viewBox="0 0 24 32" className="w-8 h-10" fill="none">
+      <circle cx="12" cy="8" r="5" stroke="#888" strokeWidth="1" fill="#12121a" />
+      <line x1="12" y1="13" x2="12" y2="22" stroke="#888" strokeWidth="1" />
+      <line x1="12" y1="22" x2="6" y2="30" stroke="#888" strokeWidth="1" />
+      <line x1="12" y1="22" x2="18" y2="30" stroke="#888" strokeWidth="1" />
+      {/* Arms raised in panic */}
+      <line x1="12" y1="16" x2="4" y2="10" stroke="#888" strokeWidth="1" />
+      <line x1="12" y1="16" x2="20" y2="10" stroke="#888" strokeWidth="1" />
     </svg>
   )
 }
 
-// Shelter icon for progress bar end
+function DebrisSvg() {
+  return (
+    <svg viewBox="0 0 30 20" className="w-10 h-6" fill="none">
+      <polygon points="5,18 12,4 20,16 28,8 25,18" fill="#1a1a2e" stroke="#ff174440" strokeWidth="1" />
+      <line x1="8" y1="14" x2="15" y2="8" stroke="#ff174430" strokeWidth="0.5" />
+      <polygon points="2,16 8,10 14,18" fill="#1a1a2e" stroke="#ff174430" strokeWidth="0.5" />
+    </svg>
+  )
+}
+
+function DarkPatchSvg() {
+  return (
+    <svg viewBox="0 0 40 20" className="w-14 h-6" fill="none">
+      <ellipse cx="20" cy="10" rx="18" ry="8" fill="#06060a" opacity="0.9" />
+    </svg>
+  )
+}
+
 function ShelterIcon() {
   return (
     <svg viewBox="0 0 16 14" className="w-4 h-3.5" fill="none">
@@ -104,7 +102,7 @@ function ShelterIcon() {
   )
 }
 
-// Precomputed parallax data to avoid recreating on every render
+// Precomputed parallax data
 function generateInterceptorStreaks() {
   const streaks: Array<{ x: number; y: number; length: number; angle: number }> = []
   for (let i = 0; i < 12; i++) {
@@ -142,61 +140,58 @@ function generateBuildings() {
   return buildings
 }
 
-function generateDebris() {
-  const debris: Array<{ x: number; type: number; size: number }> = []
-  for (let i = 0; i < 20; i++) {
-    debris.push({
-      x: Math.random() * 300,
-      type: Math.floor(Math.random() * 3),
-      size: Math.random() * 3 + 2,
-    })
-  }
-  return debris
-}
+const LANE_X_POSITIONS = [20, 50, 80]
 
 export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShelter, onFail, onLootGrabbed }: ShelterRunProps) {
   const speed = hasSneakers ? SNEAKER_SPEED : BASE_SPEED
+  const [playerLane, setPlayerLane] = useState(1)
   const [distance, setDistance] = useState(0)
-  const [jumping, setJumping] = useState(false)
-  const [ducking, setDucking] = useState(false)
   const [obstacles, setObstacles] = useState<Obstacle[]>([])
-  const [hit, setHit] = useState(false)
+  const [screenShake, setScreenShake] = useState(false)
+  const [collisionFlash, setCollisionFlash] = useState(false)
+  const [screenDim, setScreenDim] = useState(false)
   const [showHud, setShowHud] = useState(true)
   const [sfxTexts, setSfxTexts] = useState<SfxText[]>([])
   const [crates, setCrates] = useState<LootCrate[]>([])
   const [grabbing, setGrabbing] = useState(false)
   const [grabPrompt, setGrabPrompt] = useState<LootCrate | null>(null)
+
   const grabbingRef = useRef(false)
   const cratesRef = useRef<LootCrate[]>([])
   const grabPromptRef = useRef<LootCrate | null>(null)
+  const playerLaneRef = useRef(playerLane)
+  const distanceRef = useRef(distance)
   const nextObstacleId = useRef(0)
-  const jumpTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
-  const duckTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
-  const jumpingRef = useRef(false)
-  const duckingRef = useRef(false)
   const lastHitTime = useRef(0)
   const reachedRef = useRef(false)
   const shelterCalledRef = useRef(false)
   const sfxIdRef = useRef(0)
 
-  // Keep refs in sync with state
+  // Keep refs in sync
   cratesRef.current = crates
   grabPromptRef.current = grabPrompt
+  playerLaneRef.current = playerLane
+  distanceRef.current = distance
 
-  // Precompute parallax layer data once
+  // Precompute parallax data once
   const interceptorStreaks = useMemo(() => generateInterceptorStreaks(), [])
   const flashDots = useMemo(() => generateFlashDots(), [])
   const buildings = useMemo(() => generateBuildings(), [])
-  const debrisPieces = useMemo(() => generateDebris(), [])
 
-  // Generate obstacles and loot crates
+  const leftWallHeights = useMemo(() =>
+    Array.from({ length: 6 }, () => 15 + Math.random() * 10), [])
+  const rightWallHeights = useMemo(() =>
+    Array.from({ length: 6 }, () => 12 + Math.random() * 10), [])
+
+  // Generate obstacles and loot crates on mount
   useEffect(() => {
     const initial: Obstacle[] = []
-    const types: Array<'box' | 'person' | 'dark'> = ['box', 'person', 'dark']
-    for (let i = 0; i < 10; i++) {
+    const types: Array<'person' | 'debris' | 'dark'> = ['person', 'debris', 'dark']
+    for (let i = 0; i < OBSTACLE_COUNT; i++) {
       initial.push({
         id: nextObstacleId.current++,
-        x: 30 + i * 10 + Math.random() * 5,
+        lane: Math.floor(Math.random() * LANE_COUNT),
+        y: 8 + i * 8 + Math.random() * 5,
         type: types[Math.floor(Math.random() * types.length)],
       })
     }
@@ -213,30 +208,33 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     setCrates(newCrates)
   }, [])
 
-  // Game loop — handles movement + collision in one place
+  // Game loop — movement + collision
   useEffect(() => {
     const timer = setInterval(() => {
       setDistance(prev => {
         if (reachedRef.current) return prev
 
-        // Collision check (only when not jumping/ducking and not in cooldown)
+        const effectiveSpeed = grabbingRef.current ? 0 : speed
+        const next = prev + effectiveSpeed
+
+        // Collision detection
         const now = Date.now()
-        if (!jumpingRef.current && !duckingRef.current && now - lastHitTime.current > HIT_COOLDOWN) {
+        if (now - lastHitTime.current > HIT_COOLDOWN) {
+          const scrollUnit = TOTAL_DISTANCE / 60
           for (const obs of obstacles) {
-            const obsScreenX = obs.x - prev
-            if (Math.abs(obsScreenX - PLAYER_X) < OBSTACLE_WIDTH) {
+            if (obs.type === 'dark') continue
+            const relY = obs.y - next / scrollUnit
+            if (relY > -0.5 && relY < 1.2 && obs.lane === playerLaneRef.current) {
               lastHitTime.current = now
-              setHit(true)
-              setTimeout(() => setHit(false), 300)
-              return Math.max(0, prev - 3)
+              setScreenShake(true)
+              setCollisionFlash(true)
+              setTimeout(() => { setScreenShake(false); setCollisionFlash(false) }, 400)
+              return Math.max(0, prev - HIT_KNOCKBACK)
             }
           }
         }
 
-        const effectiveSpeed = grabbingRef.current ? 0 : speed
-        const next = prev + effectiveSpeed
-
-        // Proximity detection for loot crates
+        // Loot crate proximity
         for (const crate of cratesRef.current) {
           if (!crate.grabbed && Math.abs(next - crate.position) < CRATE_PROXIMITY && !grabPromptRef.current) {
             setGrabPrompt(crate)
@@ -250,24 +248,24 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
           }
         }
 
-        if (next >= 100 && !reachedRef.current) {
+        if (next >= TOTAL_DISTANCE && !reachedRef.current) {
           reachedRef.current = true
         }
-        return Math.min(next, 100)
+        return Math.min(next, TOTAL_DISTANCE)
       })
     }, 50)
     return () => clearInterval(timer)
   }, [speed, obstacles])
 
-  // Detect reaching shelter — fire exactly once
+  // Fire onReachShelter exactly once
   useEffect(() => {
-    if (distance >= 100 && reachedRef.current && !shelterCalledRef.current) {
+    if (distance >= TOTAL_DISTANCE && reachedRef.current && !shelterCalledRef.current) {
       shelterCalledRef.current = true
       onReachShelter()
     }
   }, [distance, onReachShelter])
 
-  // Countdown continues
+  // Countdown timer
   useEffect(() => {
     const timer = setInterval(() => {
       onCountdownTick()
@@ -282,26 +280,32 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     }
   }, [countdown, onFail])
 
-  const handleJump = useCallback(() => {
-    if (jumpingRef.current || duckingRef.current) return
-    setJumping(true)
-    jumpingRef.current = true
-    if (jumpTimeoutRef.current) clearTimeout(jumpTimeoutRef.current)
-    jumpTimeoutRef.current = setTimeout(() => {
-      setJumping(false)
-      jumpingRef.current = false
-    }, JUMP_DURATION)
+  // Dark patch dim effect
+  useEffect(() => {
+    const checkDim = () => {
+      const scrollUnit = TOTAL_DISTANCE / 60
+      for (const obs of obstacles) {
+        if (obs.type === 'dark') {
+          const relY = obs.y - distanceRef.current / scrollUnit
+          if (relY > -1 && relY < 2) {
+            setScreenDim(true)
+            return
+          }
+        }
+      }
+      setScreenDim(false)
+    }
+    const timer = setInterval(checkDim, 200)
+    return () => clearInterval(timer)
+  }, [obstacles])
+
+  // Lane switching handlers
+  const handleMoveLeft = useCallback(() => {
+    setPlayerLane(prev => Math.max(0, prev - 1))
   }, [])
 
-  const handleDuck = useCallback(() => {
-    if (duckingRef.current || jumpingRef.current) return
-    setDucking(true)
-    duckingRef.current = true
-    if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current)
-    duckTimeoutRef.current = setTimeout(() => {
-      setDucking(false)
-      duckingRef.current = false
-    }, DUCK_DURATION)
+  const handleMoveRight = useCallback(() => {
+    setPlayerLane(prev => Math.min(LANE_COUNT - 1, prev + 1))
   }, [])
 
   const handleGrab = useCallback(() => {
@@ -311,13 +315,9 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     grabbingRef.current = true
     setGrabPrompt(null)
 
-    // Mark crate as grabbed
     setCrates(prev => prev.map(c => c.id === crate.id ? { ...c, grabbed: true } : c))
-
-    // Emit reward
     onLootGrabbed(crate.reward)
 
-    // Resume after grab duration
     setTimeout(() => {
       setGrabbing(false)
       grabbingRef.current = false
@@ -327,13 +327,13 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
   // Keyboard controls
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.code === 'Space' || e.key === ' ') {
+      if (e.code === 'ArrowLeft' || e.key === 'a' || e.key === 'A') {
         e.preventDefault()
-        handleJump()
+        setPlayerLane(prev => Math.max(0, prev - 1))
       }
-      if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+      if (e.code === 'ArrowRight' || e.key === 'd' || e.key === 'D') {
         e.preventDefault()
-        handleDuck()
+        setPlayerLane(prev => Math.min(LANE_COUNT - 1, prev + 1))
       }
       if (e.key === 'g' || e.key === 'G') {
         e.preventDefault()
@@ -342,15 +342,15 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [handleJump, handleDuck, handleGrab])
+  }, [handleGrab])
 
-  // Fade HUD indicators after 3s
+  // Fade HUD after 3s
   useEffect(() => {
     const timer = setTimeout(() => setShowHud(false), 3000)
     return () => clearTimeout(timer)
   }, [])
 
-  // Visual SFX — random onomatopoeia every 5-15s
+  // Visual SFX onomatopoeia
   useEffect(() => {
     const scheduleNext = () => {
       const delay = (Math.random() * 10 + 5) * 1000
@@ -365,7 +365,6 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
           rotation: Math.random() * 20 - 10,
         }
         setSfxTexts(prev => [...prev, newSfx])
-        // Remove after animation
         setTimeout(() => {
           setSfxTexts(prev => prev.filter(s => s.id !== id))
         }, 1500)
@@ -376,26 +375,44 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     return () => clearTimeout(timerRef)
   }, [])
 
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return () => {
-      if (jumpTimeoutRef.current) clearTimeout(jumpTimeoutRef.current)
-      if (duckTimeoutRef.current) clearTimeout(duckTimeoutRef.current)
-    }
-  }, [])
-
   const progressPct = Math.min(100, distance)
   const progressGlowIntensity = Math.min(12, 4 + (progressPct / 100) * 8)
   const isBarPulsing = progressPct > 80
+  const scrollUnit = TOTAL_DISTANCE / 60
 
   return (
-    <div
-      className="flex flex-col flex-1 select-none"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.code === 'Space') handleJump(); if (e.code === 'ArrowDown' || e.code === 'KeyS') handleDuck() }}
+    <motion.div
+      className="flex flex-col flex-1 select-none relative overflow-hidden"
+      animate={screenShake ? { x: [0, -8, 8, -4, 4, 0] } : {}}
+      transition={{ duration: 0.5 }}
     >
+      {/* Screen dim overlay for dark patches */}
+      <AnimatePresence>
+        {screenDim && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.6 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black z-10 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Collision flash */}
+      <AnimatePresence>
+        {collisionFlash && (
+          <motion.div
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4 }}
+            className="absolute inset-0 bg-alert-red/20 z-[25] pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-noir-border">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-noir-border z-10">
         <div className="text-xs text-text-muted">
           Distance: <span className="text-neon-green font-bold tabular-nums stat-glow">{Math.round(progressPct)}m</span> / 100m
         </div>
@@ -404,8 +421,8 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
         </div>
       </div>
 
-      {/* Enhanced Progress bar */}
-      <div className="w-full h-[3px] bg-noir-border relative">
+      {/* Progress bar */}
+      <div className="w-full h-[3px] bg-noir-border relative z-10">
         <div
           className="h-full transition-all duration-100"
           style={{
@@ -417,29 +434,27 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
             animation: isBarPulsing ? 'progress-pulse 0.8s ease-in-out infinite' : 'none',
           }}
         />
-        {/* Shelter icon at the right end */}
         <div className="absolute right-0.5 top-1/2 -translate-y-1/2">
           <ShelterIcon />
         </div>
       </div>
 
-      {/* Runner scene */}
-      <div
-        className={`flex-1 relative overflow-hidden transition-colors duration-150 ${hit ? 'animate-screen-shake' : ''}`}
-        style={{
-          background: 'linear-gradient(180deg, #0a0a0f 0%, #1a0010 100%)',
-          filter: hit ? 'saturate(0.3)' : 'saturate(1)',
-          transition: 'filter 0.2s ease',
-        }}
-      >
+      {/* Hallway scene */}
+      <div className="flex-1 relative overflow-hidden bg-noir-bg">
+        {/* Touch zones for lane switching */}
+        <div className="absolute inset-0 flex z-[15]">
+          <div className="flex-1" onTouchStart={handleMoveLeft} />
+          <div className="flex-1" />
+          <div className="flex-1" onTouchStart={handleMoveRight} />
+        </div>
+
         {/* === PARALLAX LAYER 3 (back): Night sky + interceptor streaks === */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
+        <div className="absolute inset-x-0 top-0 h-[20%] overflow-hidden pointer-events-none" style={{ zIndex: 0 }}>
           <svg
             className="absolute inset-0 w-full h-full"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
           >
-            {/* Interceptor trail streaks — scroll at 0.2x */}
             {interceptorStreaks.map((s, i) => {
               const offset = (s.x - distance * 0.2) % 200
               const cx = ((offset % 200) + 200) % 200 - 50
@@ -458,7 +473,6 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
                 />
               )
             })}
-            {/* Interception flash dots */}
             {flashDots.map((d, i) => {
               const offset = (d.x - distance * 0.2) % 200
               const cx = ((offset % 200) + 200) % 200 - 50
@@ -492,92 +506,88 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
         </div>
 
         {/* === PARALLAX LAYER 2 (middle): City silhouette === */}
-        <div className="absolute bottom-16 left-0 right-0 h-24 overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
-          <svg
-            className="absolute bottom-0 w-[200%] h-full"
-            viewBox="0 0 250 50"
-            preserveAspectRatio="none"
-            style={{ transform: `translateX(${-(distance * 0.5) % 125}px)` }}
+        <div className="absolute inset-x-0 top-0 h-[25%] overflow-hidden pointer-events-none" style={{ zIndex: 1 }}>
+          <div
+            className="absolute inset-0"
+            style={{ transform: `translateX(${-(distance * 0.3) % 50}px)` }}
           >
-            {buildings.map((b, i) => (
-              <rect
-                key={`bld-${i}`}
-                x={b.x}
-                y={50 - b.height}
-                width={b.width}
-                height={b.height}
-                fill="#0d0d15"
-                stroke="#1a1a2e"
-                strokeWidth="0.2"
-              />
-            ))}
-          </svg>
-        </div>
-
-        {/* === PARALLAX LAYER 1 (front): Ground debris === */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden pointer-events-none" style={{ zIndex: 2 }}>
-          <svg
-            className="absolute bottom-0 w-[300%] h-full"
-            viewBox="0 0 300 16"
-            preserveAspectRatio="none"
-            style={{ transform: `translateX(${-(distance * 1.0) % 150}px)` }}
-          >
-            {debrisPieces.map((d, i) => {
-              if (d.type === 0) {
-                // Paper scrap
-                return (
-                  <rect
-                    key={`deb-${i}`}
-                    x={d.x}
-                    y={12 - d.size}
-                    width={d.size * 1.2}
-                    height={d.size * 0.8}
-                    fill="none"
-                    stroke="rgba(42,42,62,0.3)"
-                    strokeWidth="0.3"
-                    transform={`rotate(${i * 23}, ${d.x}, ${12 - d.size})`}
-                  />
-                )
-              }
-              if (d.type === 1) {
-                // Rock
-                return (
-                  <circle
-                    key={`deb-${i}`}
-                    cx={d.x}
-                    cy={13}
-                    r={d.size * 0.4}
-                    fill="rgba(42,42,62,0.25)"
-                  />
-                )
-              }
-              // Broken glass shard
-              return (
-                <polygon
-                  key={`deb-${i}`}
-                  points={`${d.x},${14} ${d.x + d.size * 0.5},${14 - d.size} ${d.x + d.size},${14}`}
-                  fill="none"
-                  stroke="rgba(68,138,255,0.15)"
+            <svg
+              className="absolute bottom-0 w-[200%] h-full"
+              viewBox="0 0 250 50"
+              preserveAspectRatio="none"
+            >
+              {buildings.map((b, i) => (
+                <rect
+                  key={`bld-${i}`}
+                  x={b.x}
+                  y={50 - b.height}
+                  width={b.width}
+                  height={b.height}
+                  fill="#0d0d15"
+                  stroke="#1a1a2e"
                   strokeWidth="0.2"
                 />
-              )
-            })}
-          </svg>
+              ))}
+            </svg>
+          </div>
         </div>
 
-        {/* Background flash on hit */}
-        <AnimatePresence>
-          {hit && (
-            <motion.div
-              initial={{ opacity: 0.5 }}
-              animate={{ opacity: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="absolute inset-0 bg-alert-red/20 pointer-events-none"
-              style={{ zIndex: 10 }}
+        {/* Hallway floor surface */}
+        <div className="absolute inset-x-[10%] inset-y-0 bg-noir-surface border-l-2 border-r-2 border-noir-border">
+          {/* Wall edge markings */}
+          <div className="absolute inset-y-0 left-0 w-1 bg-neon-amber/15" />
+          <div className="absolute inset-y-0 right-0 w-1 bg-neon-amber/15" />
+          {/* Wall edge glow */}
+          <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-neon-amber/10 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-3 bg-gradient-to-l from-neon-amber/10 to-transparent" />
+        </div>
+
+        {/* Lane markings — animated scrolling dashes */}
+        {[35, 65].map((x) => (
+          <div key={x} className="absolute inset-y-0" style={{ left: `${x}%` }}>
+            {Array.from({ length: 12 }).map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute w-0.5 h-8 bg-neon-amber/20"
+                style={{
+                  top: `${((i * 10 - ((distance * 8) % 120) + 120) % 120) - 10}%`,
+                }}
+              />
+            ))}
+          </div>
+        ))}
+
+        {/* Hallway walls — left */}
+        <div className="absolute left-0 top-0 bottom-0 w-[10%] overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute bg-noir-card border-r border-noir-border"
+              style={{
+                left: 0,
+                right: 0,
+                height: `${leftWallHeights[i]}%`,
+                top: `${((i * 20 - ((distance * 3) % 120) + 120) % 120) - 10}%`,
+              }}
             />
-          )}
-        </AnimatePresence>
+          ))}
+        </div>
+
+        {/* Hallway walls — right */}
+        <div className="absolute right-0 top-0 bottom-0 w-[10%] overflow-hidden">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute bg-noir-card border-l border-noir-border"
+              style={{
+                left: 0,
+                right: 0,
+                height: `${rightWallHeights[i]}%`,
+                top: `${((i * 22 - ((distance * 3) % 132) + 132) % 132) - 10}%`,
+              }}
+            />
+          ))}
+        </div>
 
         {/* Visual SFX onomatopoeia */}
         <AnimatePresence>
@@ -605,78 +615,45 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
           ))}
         </AnimatePresence>
 
-        {/* Ground with texture pattern */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-noir-surface/50 border-t border-noir-border/40" style={{ zIndex: 3 }} />
-        <div className="absolute bottom-16 left-0 right-0 h-px bg-noir-border" style={{ zIndex: 3 }} />
-
-        {/* Hallway floor lines for depth/movement */}
-        <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden" style={{ zIndex: 3 }}>
-          {Array.from({ length: 25 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute bottom-0 w-px h-16 bg-noir-border/20"
-              style={{ left: `${((i * 6 - (distance * 4) % 150 + 150) % 150)}%` }}
-            />
-          ))}
-          {/* Horizontal floor lines */}
-          <div className="absolute bottom-4 left-0 right-0 h-px bg-noir-border/15" />
-          <div className="absolute bottom-8 left-0 right-0 h-px bg-noir-border/10" />
-          <div className="absolute bottom-12 left-0 right-0 h-px bg-noir-border/5" />
-        </div>
-
-        {/* Player with subtle bobble while running */}
-        <motion.div
-          className="absolute bottom-16"
-          style={{ left: `${PLAYER_X}%`, zIndex: 5 }}
-          animate={{
-            y: jumping ? -40 : ducking ? 8 : 0,
-            ...(jumping || ducking ? {} : { translateY: [0, -2, 0] }),
-          }}
-          transition={
-            jumping
-              ? { duration: JUMP_DURATION / 1000, ease: 'easeOut' }
-              : ducking
-                ? { duration: DUCK_DURATION / 1000, ease: 'easeOut' }
-                : { duration: 0.25, repeat: Infinity, ease: 'easeInOut' }
-          }
-        >
-          <PlayerSvg jumping={jumping} ducking={ducking} />
-          {/* Shadow under player */}
-          {!jumping && (
-            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-noir-border/30 rounded-full blur-[1px]" />
-          )}
-        </motion.div>
-
-        {/* Touch zones overlay */}
-        <div className="absolute inset-0 flex pointer-events-auto" style={{ zIndex: 20 }}>
-          <div className="flex-1" onTouchStart={handleDuck} />
-          <div className="flex-1" onTouchStart={handleJump} />
-        </div>
-
-        {/* Obstacles */}
+        {/* Obstacles scrolling toward the player */}
         {obstacles.map(obs => {
-          const screenX = obs.x - distance
-          if (screenX < -10 || screenX > 110) return null
+          const relY = obs.y - distance / scrollUnit
+          if (relY < -3 || relY > 12) return null
+          const screenY = 90 - relY * 8
+          const screenX = LANE_X_POSITIONS[obs.lane]
           return (
             <div
               key={obs.id}
-              className="absolute bottom-16"
-              style={{ left: `${screenX}%`, transform: 'translateX(-50%)', zIndex: 4 }}
+              className="absolute"
+              style={{
+                left: `${screenX}%`,
+                top: `${screenY}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 4,
+              }}
             >
-              <ObstacleSvg type={obs.type} />
+              {obs.type === 'person' && <NeighborSvg />}
+              {obs.type === 'debris' && <DebrisSvg />}
+              {obs.type === 'dark' && <DarkPatchSvg />}
             </div>
           )
         })}
 
         {/* Loot crates */}
         {crates.filter(c => !c.grabbed).map(crate => {
-          const screenX = crate.position - distance
-          if (screenX < -10 || screenX > 110) return null
+          const relY = crate.position / scrollUnit - distance / scrollUnit
+          if (relY < -3 || relY > 12) return null
+          const screenY = 90 - relY * 8
           return (
             <motion.div
               key={`crate-${crate.id}`}
-              className="absolute bottom-16"
-              style={{ left: `${screenX}%`, transform: 'translateX(-50%)', zIndex: 6 }}
+              className="absolute"
+              style={{
+                left: `${LANE_X_POSITIONS[1]}%`,
+                top: `${screenY}%`,
+                transform: 'translate(-50%, -50%)',
+                zIndex: 6,
+              }}
               animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
@@ -687,6 +664,41 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
             </motion.div>
           )
         })}
+
+        {/* Shelter door indicator when close */}
+        {distance > 70 && (
+          <motion.div
+            className="absolute flex flex-col items-center"
+            style={{
+              left: `${LANE_X_POSITIONS[1]}%`,
+              top: `${90 - ((TOTAL_DISTANCE / scrollUnit - distance / scrollUnit) * 8)}%`,
+              transform: 'translate(-50%, -50%)',
+              zIndex: 4,
+            }}
+            animate={{ opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1, repeat: Infinity }}
+          >
+            <div className="text-xs text-neon-green font-bold mb-1 stat-glow tracking-wider">SHELTER</div>
+            <div className="w-10 h-12 border-2 border-neon-green rounded-sm bg-neon-green/10 shadow-[0_0_16px_rgba(0,230,118,0.3)]" />
+          </motion.div>
+        )}
+
+        {/* Player character at bottom */}
+        <motion.div
+          className="absolute bottom-[15%]"
+          animate={{ left: `${LANE_X_POSITIONS[playerLane]}%` }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+          style={{ transform: 'translateX(-50%)', zIndex: 5 }}
+        >
+          <motion.div
+            animate={{ translateY: [0, -2, 0] }}
+            transition={{ duration: 0.25, repeat: Infinity, ease: 'easeInOut' }}
+          >
+            <PlayerSvg />
+          </motion.div>
+          {/* Shadow under player */}
+          <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-noir-border/30 rounded-full blur-[1px]" />
+        </motion.div>
 
         {/* Grab prompt */}
         <AnimatePresence>
@@ -717,35 +729,24 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
           </div>
         )}
 
-        {/* Shelter indicator at the end */}
-        {100 - distance < 30 && (
-          <motion.div
-            className="absolute bottom-16 flex flex-col items-center"
-            style={{ left: `${PLAYER_X + (100 - distance)}%`, zIndex: 4 }}
-            animate={{ opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 1, repeat: Infinity }}
-          >
-            <div className="text-xs text-neon-green font-bold mb-1 stat-glow tracking-wider">SHELTER</div>
-            <div className="w-10 h-12 border-2 border-neon-green rounded-sm bg-neon-green/10 shadow-[0_0_16px_rgba(0,230,118,0.3)]" />
-          </motion.div>
-        )}
-
-        {/* Touch HUD indicators — fade after 3s */}
+        {/* Touch HUD arrows — fade after 3s */}
         <motion.div
-          className="absolute bottom-4 left-0 right-0 flex justify-between px-6 pointer-events-none"
-          style={{ zIndex: 30 }}
+          className="absolute bottom-3 left-0 right-0 flex justify-between px-4 z-20 pointer-events-none"
           initial={{ opacity: 1 }}
-          animate={{ opacity: showHud ? 0.8 : 0 }}
+          animate={{ opacity: showHud ? 1 : 0 }}
           transition={{ duration: 1 }}
         >
-          <span className="text-xs text-text-muted bg-noir-bg/70 px-3 py-1.5 rounded-full border border-noir-border/50 uppercase tracking-widest">
-            &#9664; Slide
+          <span className="text-sm text-text-muted/40 bg-noir-bg/50 px-3 py-1 rounded-full border border-noir-border/30">
+            &#9664;
           </span>
-          <span className="text-xs text-text-muted bg-noir-bg/70 px-3 py-1.5 rounded-full border border-noir-border/50 uppercase tracking-widest">
-            Jump &#9654;
+          <span className="text-[10px] text-text-muted/30 self-center uppercase tracking-widest">
+            Lane {playerLane + 1}
+          </span>
+          <span className="text-sm text-text-muted/40 bg-noir-bg/50 px-3 py-1 rounded-full border border-noir-border/30">
+            &#9654;
           </span>
         </motion.div>
       </div>
-    </div>
+    </motion.div>
   )
 }
