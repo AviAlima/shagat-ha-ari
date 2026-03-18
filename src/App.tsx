@@ -46,7 +46,7 @@ function App() {
   const eventTimerRef = useRef<ReturnType<typeof setTimeout>>()
 
   const scheduleEvent = useCallback(() => {
-    const delay = 20000 + Math.random() * 25000 // 20-45 seconds between events
+    const delay = 12000 + Math.random() * 15000 // 12-27 seconds between events
     eventTimerRef.current = setTimeout(() => {
       const event = MAMAD_EVENTS[Math.floor(Math.random() * MAMAD_EVENTS.length)]
       setCurrentEvent(event)
@@ -99,8 +99,8 @@ function App() {
     setFamilyMorale(prev => prev - moraleLost)
     setMamadDay(prev => prev + 1)
     // Existing day-advance drains
-    setSupplies(prev => prev - 3)
-    setSanity(prev => prev - 2)
+    setSupplies(prev => prev - 8)
+    setSanity(prev => prev - 5)
   }, [setSupplies, setFamilyMorale, setMamadDay, setSanity])
 
   // Siren scheduling for apartment phase
@@ -121,7 +121,7 @@ function App() {
     }
     const delay = baseMin + Math.random() * baseRange
     sirenTimerRef.current = setTimeout(() => {
-      const maxCountdown = batteryRef.current > 0 ? 60 : 15
+      const maxCountdown = batteryRef.current > 0 ? 35 : 10
       setSirenCountdown(() => maxCountdown)
       setGamePhase('siren')
     }, delay)
@@ -152,6 +152,12 @@ function App() {
     setInventory(items)
     setGamePhase('running')
   }, [setInventory, setGamePhase])
+
+  const handleLootGrabbed = useCallback((reward: { type: 'cash' | 'sanity' | 'supplies'; amount: number }) => {
+    if (reward.type === 'cash') setCash(prev => prev + reward.amount)
+    else if (reward.type === 'sanity') setSanity(prev => prev + reward.amount)
+    else if (reward.type === 'supplies') setSupplies(prev => prev + reward.amount)
+  }, [setCash, setSanity, setSupplies])
 
   const handleReachShelter = useCallback(() => {
     setSirensSurvived(prev => prev + 1)
@@ -256,7 +262,7 @@ function App() {
               onCountdownTick={handleCountdownTick}
               onReachShelter={handleReachShelter}
               onFail={handleFail}
-              onLootGrabbed={() => {}}
+              onLootGrabbed={handleLootGrabbed}
             />
           )}
 

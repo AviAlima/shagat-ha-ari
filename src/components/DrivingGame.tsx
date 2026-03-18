@@ -17,12 +17,12 @@ interface RoadObstacle {
 
 const LANE_COUNT = 3
 const TOTAL_DISTANCE = 60
-const SPEED_KM_PER_TICK = 0.1 // ~2km/s at 50ms ticks
-const SIREN_REACTION_TIME = 3000
+const SPEED_KM_PER_TICK = 0.05 // ~1km/s at 50ms ticks
+const SIREN_REACTION_TIME = 2000
 const SIREN_WAIT_TIME = 5000
-const SIREN_INTERVAL_MIN = 20000
-const SIREN_INTERVAL_MAX = 30000
-const SANITY_DAMAGE = 15
+const SIREN_INTERVAL_MIN = 12000
+const SIREN_INTERVAL_MAX = 22000
+const SANITY_DAMAGE = 20
 
 function CarSvg() {
   return (
@@ -144,7 +144,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   useEffect(() => {
     const initial: RoadObstacle[] = []
     const types: Array<'car' | 'debris' | 'dark'> = ['car', 'debris', 'dark']
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 25; i++) {
       initial.push({
         id: nextObsId.current++,
         lane: Math.floor(Math.random() * LANE_COUNT),
@@ -173,7 +173,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
             if (relY > -0.5 && relY < 1.2 && obs.lane === playerLaneRef.current) {
               lastCollisionTime.current = now
               // Collision! Slow down + sanity damage
-              onSanityChange(p => p - 5)
+              onSanityChange(p => p - 10)
               setScreenShake(true)
               setCollisionFlash(true)
               setTimeout(() => { setScreenShake(false); setCollisionFlash(false) }, 400)

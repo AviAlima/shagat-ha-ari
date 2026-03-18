@@ -31,13 +31,15 @@ interface SfxText {
   rotation: number
 }
 
-const BASE_SPEED = 0.8
-const SNEAKER_SPEED = 1.3
+const BASE_SPEED = 0.5
+const SNEAKER_SPEED = 0.8
 const JUMP_DURATION = 500
 const DUCK_DURATION = 400
 const OBSTACLE_WIDTH = 5
 const PLAYER_X = 15
-const HIT_COOLDOWN = 600
+const HIT_COOLDOWN = 300
+const GRAB_DURATION = 2500
+const CRATE_PROXIMITY = 3
 
 const SFX_WORDS = ['BOOM', 'WHIZ', 'CRACK', 'SHHH']
 
@@ -152,7 +154,7 @@ function generateDebris() {
   return debris
 }
 
-export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShelter, onFail, onLootGrabbed: _onLootGrabbed }: ShelterRunProps) {
+export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShelter, onFail, onLootGrabbed }: ShelterRunProps) {
   const speed = hasSneakers ? SNEAKER_SPEED : BASE_SPEED
   const [distance, setDistance] = useState(0)
   const [jumping, setJumping] = useState(false)
@@ -161,6 +163,12 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
   const [hit, setHit] = useState(false)
   const [showHud, setShowHud] = useState(true)
   const [sfxTexts, setSfxTexts] = useState<SfxText[]>([])
+  const [crates, setCrates] = useState<LootCrate[]>([])
+  const [grabbing, setGrabbing] = useState(false)
+  const [grabPrompt, setGrabPrompt] = useState<LootCrate | null>(null)
+  const grabbingRef = useRef(false)
+  const cratesRef = useRef<LootCrate[]>([])
+  const grabPromptRef = useRef<LootCrate | null>(null)
   const nextObstacleId = useRef(0)
   const jumpTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
   const duckTimeoutRef = useRef<ReturnType<typeof setTimeout>>()
@@ -171,17 +179,21 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
   const shelterCalledRef = useRef(false)
   const sfxIdRef = useRef(0)
 
+  // Keep refs in sync with state
+  cratesRef.current = crates
+  grabPromptRef.current = grabPrompt
+
   // Precompute parallax layer data once
   const interceptorStreaks = useMemo(() => generateInterceptorStreaks(), [])
   const flashDots = useMemo(() => generateFlashDots(), [])
   const buildings = useMemo(() => generateBuildings(), [])
   const debrisPieces = useMemo(() => generateDebris(), [])
 
-  // Generate obstacles
+  // Generate obstacles and loot crates
   useEffect(() => {
     const initial: Obstacle[] = []
     const types: Array<'box' | 'person' | 'dark'> = ['box', 'person', 'dark']
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 14; i++) {
       initial.push({
         id: nextObstacleId.current++,
         x: 30 + i * 10 + Math.random() * 5,
@@ -189,6 +201,16 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
       })
     }
     setObstacles(initial)
+
+    const cratePositions = [25 + Math.random() * 10, 50 + Math.random() * 10, 75 + Math.random() * 10]
+    const rewardTypes: Array<'cash' | 'sanity' | 'supplies'> = ['cash', 'sanity', 'supplies']
+    const newCrates: LootCrate[] = cratePositions.map((pos, i) => ({
+      id: i,
+      position: pos,
+      reward: { type: rewardTypes[i], amount: rewardTypes[i] === 'cash' ? 15 + Math.floor(Math.random() * 10) : 8 },
+      grabbed: false,
+    }))
+    setCrates(newCrates)
   }, [])
 
   // Game loop — handles movement + collision in one place
@@ -206,12 +228,28 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
               lastHitTime.current = now
               setHit(true)
               setTimeout(() => setHit(false), 300)
-              return Math.max(0, prev - 2)
+              return Math.max(0, prev - 5)
             }
           }
         }
 
-        const next = prev + speed
+        const effectiveSpeed = grabbingRef.current ? 0 : speed
+        const next = prev + effectiveSpeed
+
+        // Proximity detection for loot crates
+        for (const crate of cratesRef.current) {
+          if (!crate.grabbed && Math.abs(next - crate.position) < CRATE_PROXIMITY && !grabPromptRef.current) {
+            setGrabPrompt(crate)
+            const crateId = crate.id
+            setTimeout(() => {
+              if (grabPromptRef.current?.id === crateId) {
+                setGrabPrompt(null)
+              }
+            }, 1500)
+            break
+          }
+        }
+
         if (next >= 100 && !reachedRef.current) {
           reachedRef.current = true
         }
@@ -266,6 +304,26 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
     }, DUCK_DURATION)
   }, [])
 
+  const handleGrab = useCallback(() => {
+    if (!grabPromptRef.current || grabbingRef.current) return
+    const crate = grabPromptRef.current
+    setGrabbing(true)
+    grabbingRef.current = true
+    setGrabPrompt(null)
+
+    // Mark crate as grabbed
+    setCrates(prev => prev.map(c => c.id === crate.id ? { ...c, grabbed: true } : c))
+
+    // Emit reward
+    onLootGrabbed(crate.reward)
+
+    // Resume after grab duration
+    setTimeout(() => {
+      setGrabbing(false)
+      grabbingRef.current = false
+    }, GRAB_DURATION)
+  }, [onLootGrabbed])
+
   // Keyboard controls
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -277,10 +335,14 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
         e.preventDefault()
         handleDuck()
       }
+      if (e.key === 'g' || e.key === 'G') {
+        e.preventDefault()
+        handleGrab()
+      }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [handleJump, handleDuck])
+  }, [handleJump, handleDuck, handleGrab])
 
   // Fade HUD indicators after 3s
   useEffect(() => {
@@ -605,6 +667,55 @@ export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShe
             </div>
           )
         })}
+
+        {/* Loot crates */}
+        {crates.filter(c => !c.grabbed).map(crate => {
+          const screenX = crate.position - distance
+          if (screenX < -10 || screenX > 110) return null
+          return (
+            <motion.div
+              key={`crate-${crate.id}`}
+              className="absolute bottom-16"
+              style={{ left: `${screenX}%`, transform: 'translateX(-50%)', zIndex: 6 }}
+              animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <svg viewBox="0 0 20 20" className="w-8 h-8">
+                <rect x="2" y="4" width="16" height="14" fill="#1a1a2e" stroke="#ffab00" strokeWidth="1.5" rx="2" />
+                <text x="10" y="13" textAnchor="middle" fill="#ffab00" fontSize="8">?</text>
+              </svg>
+            </motion.div>
+          )
+        })}
+
+        {/* Grab prompt */}
+        <AnimatePresence>
+          {grabPrompt && (
+            <motion.div
+              className="absolute top-1/3 left-1/2 -translate-x-1/2 z-30"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+            >
+              <button
+                onClick={handleGrab}
+                onTouchStart={handleGrab}
+                className="px-4 py-2 bg-neon-amber/90 text-noir-bg font-bold text-sm rounded-lg cursor-pointer animate-pulse"
+              >
+                TAP TO GRAB &mdash; {grabPrompt.reward.type === 'cash' ? `+\u20AA${grabPrompt.reward.amount}` : `+${grabPrompt.reward.amount} ${grabPrompt.reward.type}`}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Grabbing indicator */}
+        {grabbing && (
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 z-30">
+            <span className="px-4 py-2 bg-neon-amber/70 text-noir-bg font-bold text-sm rounded-lg animate-pulse">
+              Grabbing...
+            </span>
+          </div>
+        )}
 
         {/* Shelter indicator at the end */}
         {100 - distance < 30 && (

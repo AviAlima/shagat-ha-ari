@@ -62,7 +62,7 @@ export const MAMAD_EVENTS: MamadEventData[] = [
     icon: 'ShoppingCart',
     urgent: false,
     options: [
-      { label: 'Go yourself', effects: { sanity: -10, supplies: 20 } },
+      { label: 'Go yourself', effects: { sanity: -12, supplies: 12 } },
       { label: 'Send brother', effects: { morale: -8, supplies: 15 } },
       { label: 'Wait it out', effects: { morale: -5 } },
     ],
@@ -109,7 +109,7 @@ export const MAMAD_EVENTS: MamadEventData[] = [
     icon: 'Radio',
     urgent: false,
     options: [
-      { label: 'Celebrate!', effects: { sanity: 10, morale: 10 } },
+      { label: 'Celebrate!', effects: { sanity: 5, morale: 5 } },
       { label: "Don't get hopes up", effects: { sanity: 3 } },
     ],
   },
@@ -131,7 +131,7 @@ export const MAMAD_EVENTS: MamadEventData[] = [
     icon: 'Droplets',
     urgent: true,
     options: [
-      { label: 'Fill containers now', effects: { supplies: 15 } },
+      { label: 'Fill containers now', effects: { supplies: 8 } },
       { label: 'Hope it comes back', effects: { supplies: -10 } },
     ],
   },
@@ -153,7 +153,7 @@ export const MAMAD_EVENTS: MamadEventData[] = [
     icon: 'Image',
     urgent: false,
     options: [
-      { label: 'Look through it together', effects: { sanity: 12, morale: 8 } },
+      { label: 'Look through it together', effects: { sanity: 5, morale: 5 } },
       { label: 'Not now', effects: {} },
     ],
   },

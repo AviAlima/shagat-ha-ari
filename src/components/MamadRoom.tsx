@@ -357,11 +357,11 @@ export function MamadRoom({
   const momMax = 10000
   const dadMax = 15000
   const brotherMax = 20000
-  const catMax = 25000
+  const catMax = 35000
   const supplyMax = 15000
   const radioMax = 12000
   const chargerMax = 60000
-  const cardMax = 30000
+  const cardMax = 40000
 
   // Distant rumble flash effect
   const [flash, setFlash] = useState(false)
@@ -441,9 +441,9 @@ export function MamadRoom({
 
   const handleCat = useCallback(() => {
     if (catCooldown > 0) return
-    onSanityChange(prev => prev + 8)
+    onSanityChange(prev => prev + 4)
     setCatCooldown(catMax)
-    showStatus(setCatText, '+8 Sanity')
+    showStatus(setCatText, '+4 Sanity')
   }, [catCooldown, onSanityChange, showStatus])
 
   const handleSupply = useCallback(() => {
@@ -471,10 +471,10 @@ export function MamadRoom({
 
   const handleCards = useCallback(() => {
     if (cardCooldown > 0) return
-    onSanityChange(prev => prev + 5)
-    onFamilyMoraleChange(prev => Math.min(100, prev + 8))
+    onSanityChange(prev => prev + 3)
+    onFamilyMoraleChange(prev => Math.min(100, prev + 4))
     setCardCooldown(cardMax)
-    showStatus(setCardText, '+5 Sanity, +8 Morale')
+    showStatus(setCardText, '+3 Sanity, +4 Morale')
   }, [cardCooldown, onSanityChange, onFamilyMoraleChange, showStatus])
 
   return (

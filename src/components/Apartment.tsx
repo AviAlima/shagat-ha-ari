@@ -397,7 +397,7 @@ export function Apartment({
 
   const tvMaxCooldown = 2000
   const workMaxCooldown = 3000
-  const coffeeMaxCooldown = 30000
+  const coffeeMaxCooldown = 45000
   const fermentMaxCooldown = 45000
 
   // Distant flash effect
@@ -452,7 +452,7 @@ export function Apartment({
 
   const handleCoffee = useCallback(() => {
     if (coffeeCooldown > 0) return
-    const boost = upgrades.premiumCoffee ? 30 : 15
+    const boost = upgrades.premiumCoffee ? 18 : 8
     onSanityChange(prev => prev + boost)
     onAdvanceTime()
     setCoffeeCooldown(coffeeMaxCooldown)
@@ -461,10 +461,10 @@ export function Apartment({
 
   const handleFerment = useCallback(() => {
     if (fermentCooldown > 0) return
-    onSanityChange(prev => prev + 10)
+    onSanityChange(prev => prev + 5)
     onAdvanceTime()
     setFermentCooldown(fermentMaxCooldown)
-    showStatus(setFermentText, '+10 Sanity')
+    showStatus(setFermentText, '+5 Sanity')
   }, [fermentCooldown, onSanityChange, onAdvanceTime, showStatus])
 
   const handlePhone = useCallback(() => {
@@ -562,7 +562,7 @@ export function Apartment({
           <ApartmentItem
             svgKey="coffee"
             label="Coffee"
-            subtitle={`+${upgrades.premiumCoffee ? 30 : 15} Sanity`}
+            subtitle={`+${upgrades.premiumCoffee ? 18 : 8} Sanity`}
             onClick={handleCoffee}
             disabled={coffeeCooldown > 0}
             cooldownPct={(coffeeCooldown / coffeeMaxCooldown) * 100}
@@ -572,7 +572,7 @@ export function Apartment({
           <ApartmentItem
             svgKey="ferment"
             label="Ferment"
-            subtitle="+10 Sanity"
+            subtitle="+5 Sanity"
             onClick={handleFerment}
             disabled={fermentCooldown > 0}
             cooldownPct={(fermentCooldown / fermentMaxCooldown) * 100}

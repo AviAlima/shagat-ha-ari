@@ -37,8 +37,8 @@ const availableItems: PackableItem[] = [
   { id: 'radio', label: 'Radio', icon: Radio, slots: 2 },
 ]
 
-const MAX_SLOTS = 8
-const PACKING_TIME = 15
+const MAX_SLOTS = 6
+const PACKING_TIME = 8
 
 export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set())

@@ -46,9 +46,9 @@ export interface GameActions {
 const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val))
 
 export function useGameState(): GameState & GameActions {
-  const [sanity, setSanityRaw] = useState(75)
-  const [battery, setBatteryRaw] = useState(88)
-  const [cash, setCashRaw] = useState(120)
+  const [sanity, setSanityRaw] = useState(55)
+  const [battery, setBatteryRaw] = useState(60)
+  const [cash, setCashRaw] = useState(60)
   const [inventory, setInventory] = useState<string[]>([])
   const [upgrades, setUpgrades] = useState<Upgrades>({
     sneakers: false,
@@ -62,8 +62,8 @@ export function useGameState(): GameState & GameActions {
   const [cashEarned, setCashEarned] = useState(0)
   const [sirensSurvived, setSirensSurvivedRaw] = useState(0)
   const [distance, setDistanceRaw] = useState(0)
-  const [familyMorale, setFamilyMoraleRaw] = useState(70)
-  const [supplies, setSuppliesRaw] = useState(80)
+  const [familyMorale, setFamilyMoraleRaw] = useState(50)
+  const [supplies, setSuppliesRaw] = useState(50)
   const [mamadDay, setMamadDayRaw] = useState(1)
 
   const upgradesRef = useRef(upgrades)
@@ -119,9 +119,9 @@ export function useGameState(): GameState & GameActions {
   }, [])
 
   const resetGame = useCallback(() => {
-    setSanityRaw(75)
-    setBatteryRaw(88)
-    setCashRaw(120)
+    setSanityRaw(55)
+    setBatteryRaw(60)
+    setCashRaw(60)
     setInventory([])
     setUpgrades({ sneakers: false, powerbank: false, premiumCoffee: false })
     setGamePhase('menu')
@@ -131,15 +131,15 @@ export function useGameState(): GameState & GameActions {
     setCashEarned(0)
     setSirensSurvivedRaw(0)
     setDistanceRaw(0)
-    setFamilyMoraleRaw(70)
-    setSuppliesRaw(80)
+    setFamilyMoraleRaw(50)
+    setSuppliesRaw(50)
     setMamadDayRaw(1)
   }, [])
 
-  // Battery drain: -1 every 8s (or 16s with powerbank) — apartment and phase3
+  // Battery drain: -1 every 5s (or 10s with powerbank) — apartment and phase3
   useEffect(() => {
     if (gamePhase !== 'apartment' && gamePhase !== 'phase3') return
-    const interval = upgradesRef.current.powerbank ? 16000 : 8000
+    const interval = upgradesRef.current.powerbank ? 10000 : 5000
     const timer = setInterval(() => {
       const phase = gamePhaseRef.current
       if (phase === 'apartment' || phase === 'phase3') {
@@ -156,18 +156,18 @@ export function useGameState(): GameState & GameActions {
       if (gamePhaseRef.current === 'phase3') {
         setSuppliesRaw(prev => clamp(prev - 1, 0, 100))
       }
-    }, 15000)
+    }, 8000)
     return () => clearInterval(timer)
   }, [gamePhase])
 
-  // Passive morale drain in phase3: -1 every 20s
+  // Passive morale drain in phase3: -1 every 12s
   useEffect(() => {
     if (gamePhase !== 'phase3') return
     const timer = setInterval(() => {
       if (gamePhaseRef.current === 'phase3') {
         setFamilyMoraleRaw(prev => clamp(prev - 1, 0, 100))
       }
-    }, 20000)
+    }, 12000)
     return () => clearInterval(timer)
   }, [gamePhase])
 

@@ -36,7 +36,7 @@ export function NightWatch({ mamadDay, onComplete }: NightWatchProps) {
   caughtRef.current = caught
   missedRef.current = missed
 
-  const spawnRate = 0.04 + mamadDay * 0.012
+  const spawnRate = 0.06 + mamadDay * 0.018
 
   const addFlash = useCallback((x: number, y: number, color: 'green' | 'red') => {
     const id = nextIdRef.current++
@@ -64,7 +64,7 @@ export function NightWatch({ mamadDay, onComplete }: NightWatchProps) {
           clearInterval(interval)
           setShowResults(true)
           setTimeout(() => {
-            onComplete(caughtRef.current * 2, missedRef.current * 3)
+            onComplete(caughtRef.current * 1, missedRef.current * 5)
           }, 1000)
           return 0
         }
@@ -74,7 +74,7 @@ export function NightWatch({ mamadDay, onComplete }: NightWatchProps) {
       // Spawn threats
       if (Math.random() < spawnRate) {
         const id = nextIdRef.current++
-        const lifetime = 800 + Math.random() * 400
+        const lifetime = 600 + Math.random() * 300
         setThreats(prev => [
           ...prev,
           {
@@ -196,11 +196,11 @@ export function NightWatch({ mamadDay, onComplete }: NightWatchProps) {
                 <div className="flex gap-6 text-xs">
                   <div>
                     <span className="text-neon-green font-bold text-lg">{caught}</span>
-                    <p className="text-text-muted mt-1">Caught (+{caught * 2} supplies)</p>
+                    <p className="text-text-muted mt-1">Caught (+{caught * 1} supplies)</p>
                   </div>
                   <div>
                     <span className="text-alert-red font-bold text-lg">{missed}</span>
-                    <p className="text-text-muted mt-1">Missed (-{missed * 3} morale)</p>
+                    <p className="text-text-muted mt-1">Missed (-{missed * 5} morale)</p>
                   </div>
                 </div>
               </div>
