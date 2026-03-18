@@ -142,25 +142,27 @@ function ApartmentItem({
   const scheme = colorSchemes[colorScheme]
   return (
     <motion.button
-      whileHover={disabled ? {} : { scale: 1.06, y: -2 }}
-      whileTap={disabled ? {} : { scale: 0.95 }}
+      whileHover={disabled ? {} : { scale: 1.04, y: -1 }}
+      whileTap={disabled ? {} : { scale: 0.96 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative flex flex-col items-center gap-2.5 p-5 rounded-xl border transition-all cursor-pointer min-h-[56px] min-w-[48px] ${
+      className={`relative flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer min-h-[48px] ${
         disabled
           ? 'border-noir-border/30 bg-noir-card/20 opacity-40 cursor-not-allowed'
-          : `${scheme.border} bg-noir-card/50 ${scheme.hover} ${scheme.glow}`
+          : `${scheme.border} bg-noir-card/40 ${scheme.hover}`
       }`}
     >
-      <div className={`p-2.5 rounded-lg ${disabled ? 'bg-noir-card/30' : `${scheme.glow} border border-current/10`}`}>
-        <Icon size={32} className={disabled ? 'text-text-muted/30' : scheme.icon} />
+      <div className={`p-2 rounded-md flex-shrink-0 ${disabled ? 'bg-noir-card/30' : scheme.glow}`}>
+        <Icon size={22} className={disabled ? 'text-text-muted/30' : scheme.icon} />
       </div>
-      <span className="text-xs text-text-muted uppercase tracking-wider font-bold">{label}</span>
-      {subtitle && (
-        <span className="text-[9px] text-text-muted/50">{subtitle}</span>
-      )}
+      <div className="flex flex-col items-start text-left min-w-0">
+        <span className="text-[11px] text-text-primary/80 uppercase tracking-wider font-bold">{label}</span>
+        {subtitle && (
+          <span className={`text-[9px] ${disabled ? 'text-text-muted/30' : 'text-text-muted/60'}`}>{subtitle}</span>
+        )}
+      </div>
       {cooldownPct > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-noir-border rounded-b-xl overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-noir-border rounded-b-lg overflow-hidden">
           <div
             className="h-full bg-alert-red/60 transition-all duration-300"
             style={{ width: `${cooldownPct}%` }}
@@ -173,7 +175,7 @@ function ApartmentItem({
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="absolute -top-7 text-[11px] text-neon-green whitespace-nowrap font-bold stat-glow"
+            className="absolute -top-5 left-2 text-[10px] text-neon-green whitespace-nowrap font-bold stat-glow"
           >
             {statusText}
           </motion.span>
@@ -348,8 +350,8 @@ export function Apartment({
           )}
         </AnimatePresence>
 
-        {/* Interactive Items Grid — larger icons, better spacing, color-coded */}
-        <div className="grid grid-cols-3 gap-3 flex-1 content-start">
+        {/* Interactive Items Grid */}
+        <div className="grid grid-cols-2 gap-2 flex-1 content-start">
           <ApartmentItem
             icon={Monitor}
             label="TV"
