@@ -1,12 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+export interface LootCrate {
+  id: number
+  position: number
+  reward: { type: 'cash' | 'sanity' | 'supplies'; amount: number }
+  grabbed: boolean
+}
+
 interface ShelterRunProps {
   countdown: number
   hasSneakers: boolean
   onCountdownTick: () => void
   onReachShelter: () => void
   onFail: () => void
+  onLootGrabbed: (reward: { type: 'cash' | 'sanity' | 'supplies'; amount: number }) => void
 }
 
 interface Obstacle {
@@ -144,7 +152,7 @@ function generateDebris() {
   return debris
 }
 
-export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShelter, onFail }: ShelterRunProps) {
+export function ShelterRun({ countdown, hasSneakers, onCountdownTick, onReachShelter, onFail, onLootGrabbed: _onLootGrabbed }: ShelterRunProps) {
   const speed = hasSneakers ? SNEAKER_SPEED : BASE_SPEED
   const [distance, setDistance] = useState(0)
   const [jumping, setJumping] = useState(false)

@@ -16,6 +16,7 @@ import { MamadRoom } from './components/MamadRoom'
 import { MamadEvent, MAMAD_EVENTS } from './components/MamadEvent'
 import type { MamadEventData } from './components/MamadEvent'
 import { MamadGameOver } from './components/MamadGameOver'
+import { NightWatch } from './components/NightWatch'
 import { useGameState } from './hooks/useGameState'
 
 function App() {
@@ -31,6 +32,13 @@ function App() {
     setSanity, setBattery, setCash, setUpgrade, advanceTime, resetGame,
     setFamilyMorale, setSupplies, setMamadDay,
   } = game
+
+  const [evacuationDecided, setEvacuationDecided] = useState(false)
+  const evacuationDecidedRef = useRef(false)
+  evacuationDecidedRef.current = evacuationDecided
+
+  // Night Watch mini-game between mamad days
+  const [nightWatchActive, setNightWatchActive] = useState(false)
 
   // Phase 3 event system
   const [currentEvent, setCurrentEvent] = useState<MamadEventData | null>(null)
@@ -82,11 +90,18 @@ function App() {
   }, [setSanity, setFamilyMorale, setSupplies, setBattery])
 
   const handleAdvanceDay = useCallback(() => {
+    setNightWatchActive(true)
+  }, [])
+
+  const handleNightWatchComplete = useCallback((suppliesGained: number, moraleLost: number) => {
+    setNightWatchActive(false)
+    setSupplies(prev => prev + suppliesGained)
+    setFamilyMorale(prev => prev - moraleLost)
     setMamadDay(prev => prev + 1)
-    // Small passive drain on day advance
+    // Existing day-advance drains
     setSupplies(prev => prev - 3)
     setSanity(prev => prev - 2)
-  }, [setMamadDay, setSupplies, setSanity])
+  }, [setSupplies, setFamilyMorale, setMamadDay, setSanity])
 
   // Siren scheduling for apartment phase
   const scheduleSiren = useCallback(() => {
@@ -149,7 +164,7 @@ function App() {
 
   const handleContinue = useCallback(() => {
     setInventory([])
-    if (sirensSurvivedRef.current >= 3) {
+    if (sirensSurvivedRef.current >= 3 && !evacuationDecidedRef.current) {
       setGamePhase('evacuation_choice')
     } else {
       setGamePhase('apartment')
@@ -157,10 +172,12 @@ function App() {
   }, [setInventory, setGamePhase])
 
   const handleStay = useCallback(() => {
+    setEvacuationDecided(true)
     setGamePhase('apartment')
   }, [setGamePhase])
 
   const handleDrive = useCallback(() => {
+    setEvacuationDecided(true)
     setGamePhase('driving')
   }, [setGamePhase])
 
@@ -175,6 +192,8 @@ function App() {
   const handleRetry = useCallback(() => {
     setCurrentEvent(null)
     setMamadGameOverReason(null)
+    setEvacuationDecided(false)
+    setNightWatchActive(false)
     resetGame()
   }, [resetGame])
 
@@ -237,6 +256,7 @@ function App() {
               onCountdownTick={handleCountdownTick}
               onReachShelter={handleReachShelter}
               onFail={handleFail}
+              onLootGrabbed={() => {}}
             />
           )}
 
@@ -310,6 +330,11 @@ function App() {
       {/* Phase 3 event overlay — renders on top of MamadRoom */}
       {game.gamePhase === 'phase3' && currentEvent && (
         <MamadEvent event={currentEvent} onChoice={handleEventChoice} />
+      )}
+
+      {/* Night Watch mini-game overlay — renders on top of everything */}
+      {game.gamePhase === 'phase3' && nightWatchActive && (
+        <NightWatch mamadDay={game.mamadDay} onComplete={handleNightWatchComplete} />
       )}
     </div>
   )

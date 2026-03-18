@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { motion } from 'framer-motion'
+import { motion, LayoutGroup } from 'framer-motion'
 import {
   Droplets,
   Cross,
@@ -43,6 +43,9 @@ const PACKING_TIME = 15
 export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameProps) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [packingTimer, setPackingTimer] = useState(PACKING_TIME)
+  const [shuffledOrder, setShuffledOrder] = useState<number[]>(() =>
+    Array.from({ length: availableItems.length }, (_, i) => i)
+  )
 
   const usedSlots = availableItems
     .filter(item => selected.has(item.id))
@@ -75,6 +78,35 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
       onDone(Array.from(selected))
     }
   }, [packingTimer, onDone, selected])
+
+  // Shaky hands — shuffle item positions as countdown drops
+  useEffect(() => {
+    let interval: number | undefined
+
+    if (countdown > 35) {
+      return
+    }
+
+    const getDelay = () => {
+      if (countdown < 15) return 1200
+      if (countdown < 25) return 2000
+      return 3000
+    }
+
+    const shuffle = () => {
+      setShuffledOrder(prev => {
+        const arr = [...prev]
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]]
+        }
+        return arr
+      })
+    }
+
+    interval = window.setInterval(shuffle, getDelay())
+    return () => { if (interval) clearInterval(interval) }
+  }, [countdown])
 
   const toggleItem = useCallback((item: PackableItem) => {
     setSelected(prev => {
@@ -144,46 +176,66 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
         />
       </div>
 
-      {/* Items grid */}
-      <div className="grid grid-cols-4 gap-2.5 flex-1 content-start">
-        {availableItems.map((item) => {
-          const isSelected = selected.has(item.id)
-          const canFit = usedSlots + item.slots <= MAX_SLOTS
+      {/* Shaky hands indicator */}
+      {countdown < 25 && (
+        <motion.p
+          className="text-center text-xs text-alert-red font-bold mb-2"
+          animate={{ opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          Hands shaking...
+        </motion.p>
+      )}
 
-          return (
-            <motion.button
-              key={item.id}
-              whileTap={{ scale: 0.9 }}
-              whileHover={!isSelected && canFit ? { scale: 1.05 } : {}}
-              onClick={() => toggleItem(item)}
-              disabled={!isSelected && !canFit}
-              className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all cursor-pointer ${
-                isSelected
-                  ? 'border-neon-green/70 bg-neon-green/10 shadow-[0_0_16px_rgba(0,230,118,0.2)]'
-                  : canFit
-                    ? 'border-noir-border bg-noir-card/50 hover:border-text-muted/40 hover:bg-noir-card/70'
-                    : 'border-noir-border/30 bg-noir-card/20 opacity-30 cursor-not-allowed'
-              }`}
-            >
-              {isSelected && (
-                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-neon-green rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(0,230,118,0.4)]">
-                  <Check size={12} className="text-noir-bg" strokeWidth={3} />
+      {/* Items grid */}
+      <LayoutGroup>
+        <div className="grid grid-cols-4 gap-2.5 flex-1 content-start">
+          {shuffledOrder.map((index) => {
+            const item = availableItems[index]
+            const isSelected = selected.has(item.id)
+            const canFit = usedSlots + item.slots <= MAX_SLOTS
+
+            return (
+              <motion.button
+                key={item.id}
+                layout
+                layoutId={item.id}
+                animate={{
+                  rotate: countdown < 20 ? (index % 2 === 0 ? 2 : -2) : 0,
+                }}
+                transition={{ layout: { duration: 0.4, type: 'spring' } }}
+                whileTap={{ scale: 0.9 }}
+                whileHover={!isSelected && canFit ? { scale: 1.05 } : {}}
+                onClick={() => toggleItem(item)}
+                disabled={!isSelected && !canFit}
+                className={`relative flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all cursor-pointer ${
+                  isSelected
+                    ? 'border-neon-green/70 bg-neon-green/10 shadow-[0_0_16px_rgba(0,230,118,0.2)]'
+                    : canFit
+                      ? 'border-noir-border bg-noir-card/50 hover:border-text-muted/40 hover:bg-noir-card/70'
+                      : 'border-noir-border/30 bg-noir-card/20 opacity-30 cursor-not-allowed'
+                }`}
+              >
+                {isSelected && (
+                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-neon-green rounded-full flex items-center justify-center shadow-[0_0_8px_rgba(0,230,118,0.4)]">
+                    <Check size={12} className="text-noir-bg" strokeWidth={3} />
+                  </div>
+                )}
+                <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-neon-green/15' : ''}`}>
+                  <item.icon
+                    size={26}
+                    className={isSelected ? 'text-neon-green' : canFit ? 'text-text-muted' : 'text-text-muted/30'}
+                  />
                 </div>
-              )}
-              <div className={`p-1.5 rounded-lg ${isSelected ? 'bg-neon-green/15' : ''}`}>
-                <item.icon
-                  size={26}
-                  className={isSelected ? 'text-neon-green' : canFit ? 'text-text-muted' : 'text-text-muted/30'}
-                />
-              </div>
-              <span className={`text-[10px] leading-tight text-center font-bold ${isSelected ? 'text-neon-green' : 'text-text-muted'}`}>{item.label}</span>
-              <span className={`text-[9px] ${isSelected ? 'text-neon-green/70' : 'text-text-muted/40'}`}>
-                {item.slots} slot{item.slots > 1 ? 's' : ''}
-              </span>
-            </motion.button>
-          )
-        })}
-      </div>
+                <span className={`text-[10px] leading-tight text-center font-bold ${isSelected ? 'text-neon-green' : 'text-text-muted'}`}>{item.label}</span>
+                <span className={`text-[9px] ${isSelected ? 'text-neon-green/70' : 'text-text-muted/40'}`}>
+                  {item.slots} slot{item.slots > 1 ? 's' : ''}
+                </span>
+              </motion.button>
+            )
+          })}
+        </div>
+      </LayoutGroup>
 
       {/* Go button */}
       <motion.button

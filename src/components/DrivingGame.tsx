@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 interface DrivingGameProps {
@@ -100,7 +100,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   const [sirenState, setSirenState] = useState<SirenState>('none')
   const [screenShake, setScreenShake] = useState(false)
   const [hudVisible, setHudVisible] = useState(true)
-  const [sirenStartTime, setSirenStartTime] = useState(0)
+  const sirenStartTimeRef = useRef(0)
   const [sirenCountdown, setSirenCountdown] = useState(1)
 
   const [collisionFlash, setCollisionFlash] = useState(false)
@@ -127,17 +127,17 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   // Siren countdown animation
   useEffect(() => {
     if (sirenState === 'active') {
-      setSirenStartTime(Date.now())
+      const startTime = Date.now()
+      sirenStartTimeRef.current = startTime
       setSirenCountdown(1)
       const interval = setInterval(() => {
-        const elapsed = Date.now() - sirenStartTime
+        const elapsed = Date.now() - sirenStartTimeRef.current
         const remaining = Math.max(0, 1 - elapsed / SIREN_REACTION_TIME)
         setSirenCountdown(remaining)
         if (remaining <= 0) clearInterval(interval)
       }, 50)
       return () => clearInterval(interval)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sirenState])
 
   // Generate obstacles on mount
@@ -287,6 +287,11 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [handleSirenStop])
+
+  const leftSideHeights = useMemo(() =>
+    Array.from({ length: 6 }, () => 15 + Math.random() * 10), [])
+  const rightSideHeights = useMemo(() =>
+    Array.from({ length: 6 }, () => 12 + Math.random() * 10), [])
 
   const progressPct = Math.min(100, (distance / TOTAL_DISTANCE) * 100)
   const laneXPositions = [20, 50, 80] // percentage positions for 3 lanes
@@ -525,7 +530,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
               style={{
                 left: 0,
                 right: 0,
-                height: `${15 + Math.random() * 10}%`,
+                height: `${leftSideHeights[i]}%`,
                 top: `${((i * 20 - ((distance * 3) % 120) + 120) % 120) - 10}%`,
               }}
             />
@@ -541,7 +546,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
               style={{
                 left: 0,
                 right: 0,
-                height: `${12 + Math.random() * 10}%`,
+                height: `${rightSideHeights[i]}%`,
                 top: `${((i * 22 - ((distance * 3) % 132) + 132) % 132) - 10}%`,
               }}
             />
