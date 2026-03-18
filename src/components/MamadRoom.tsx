@@ -179,7 +179,7 @@ function MamadItem({
       whileTap={disabled ? {} : { scale: 0.95 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all cursor-pointer ${
+      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all cursor-pointer min-h-[48px] min-w-[48px] ${
         disabled
           ? 'border-noir-border/50 bg-noir-card/30 opacity-50 cursor-not-allowed'
           : 'border-noir-border bg-noir-card/60 hover:border-neon-amber/50 hover:shadow-[0_0_15px_rgba(255,171,0,0.15)]'
@@ -234,7 +234,7 @@ function NpcButton({
       whileTap={disabled ? {} : { scale: 0.93 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all cursor-pointer ${
+      className={`relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all cursor-pointer min-h-[48px] min-w-[48px] ${
         disabled
           ? 'border-noir-border/50 bg-noir-card/20 opacity-50 cursor-not-allowed'
           : 'border-noir-border/70 bg-noir-card/40 hover:border-neon-amber/40 hover:shadow-[0_0_12px_rgba(255,171,0,0.1)]'
@@ -297,14 +297,14 @@ function BrotherChoiceModal({
         <p className="text-xs text-text-muted text-center">Your brother is on a Zoom call...</p>
         <button
           onClick={onShutUp}
-          className="px-4 py-2 rounded border border-alert-red/50 bg-noir-surface text-xs text-alert-red hover:bg-alert-red/10 transition-colors cursor-pointer"
+          className="px-4 py-2 rounded border border-alert-red/50 bg-noir-surface text-xs text-alert-red hover:bg-alert-red/10 transition-colors cursor-pointer min-h-[44px]"
         >
           Tell him to shut up
         </button>
         <button
           onClick={onCoffee}
           disabled={suppliesLow}
-          className={`px-4 py-2 rounded border text-xs transition-colors cursor-pointer ${
+          className={`px-4 py-2 rounded border text-xs transition-colors cursor-pointer min-h-[44px] ${
             suppliesLow
               ? 'border-noir-border/50 text-text-muted/50 cursor-not-allowed'
               : 'border-neon-green/50 bg-noir-surface text-neon-green hover:bg-neon-green/10'
@@ -508,7 +508,7 @@ export function MamadRoom({
           </span>
           <button
             onClick={onAdvanceDay}
-            className="text-[10px] text-text-muted/60 uppercase tracking-wider border border-noir-border/50 rounded px-2 py-1 hover:border-neon-amber/30 hover:text-text-muted transition-colors cursor-pointer"
+            className="text-[10px] text-text-muted/60 uppercase tracking-wider border border-noir-border/50 rounded px-3 py-2 min-h-[44px] min-w-[48px] hover:border-neon-amber/30 hover:text-text-muted transition-colors cursor-pointer"
           >
             End Day
           </button>
@@ -521,8 +521,8 @@ export function MamadRoom({
         <div className="absolute inset-0 border-4 border-noir-card/80 rounded pointer-events-none" />
         <div className="absolute inset-1 border border-noir-border/30 rounded pointer-events-none" />
 
-        {/* NPC Grid - 2x2, cramped, slightly overlapping */}
-        <div className="grid grid-cols-2 gap-1.5 relative z-0">
+        {/* NPC Grid - 2x2, cramped, slightly overlapping; scrollable on small screens */}
+        <div className="grid grid-cols-2 gap-1.5 relative z-0 overflow-y-auto max-h-[50vh] sm:max-h-none">
           {/* Mom - top left */}
           <NpcButton
             label="Mom"

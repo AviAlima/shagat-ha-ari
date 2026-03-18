@@ -169,7 +169,9 @@ function App() {
   const showStats = game.gamePhase !== 'menu'
 
   return (
-    <div className="flex flex-col min-h-screen bg-noir-bg">
+    <div className={`flex flex-col min-h-screen bg-noir-bg ${
+      game.sanity < 10 ? 'sanity-critical' : game.sanity < 25 ? 'sanity-low' : ''
+    }`}>
       <div className="crt-overlay" />
       <NewsTicker />
       {showStats && <StatsBar sanity={game.sanity} battery={game.battery} cash={game.cash} />}
@@ -177,10 +179,10 @@ function App() {
       <AnimatePresence mode="wait">
         <motion.div
           key={game.gamePhase}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.2 }}
+          initial={{ opacity: 0, x: Math.random() > 0.5 ? -8 : 8, filter: 'hue-rotate(20deg) brightness(1.5)' }}
+          animate={{ opacity: 1, x: 0, filter: 'hue-rotate(0deg) brightness(1)' }}
+          exit={{ opacity: 0, x: Math.random() > 0.5 ? 8 : -8, filter: 'saturate(0) brightness(0.5)' }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
           className="flex flex-col flex-1"
         >
           {game.gamePhase === 'menu' && (

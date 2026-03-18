@@ -146,7 +146,7 @@ function ApartmentItem({
       whileTap={disabled ? {} : { scale: 0.95 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative flex flex-col items-center gap-2.5 p-5 rounded-xl border transition-all cursor-pointer ${
+      className={`relative flex flex-col items-center gap-2.5 p-5 rounded-xl border transition-all cursor-pointer min-h-[56px] min-w-[48px] ${
         disabled
           ? 'border-noir-border/30 bg-noir-card/20 opacity-40 cursor-not-allowed'
           : `${scheme.border} bg-noir-card/50 ${scheme.hover} ${scheme.glow}`

@@ -48,8 +48,18 @@ function CarSvg() {
 
 function ObstacleCarSvg() {
   return (
-    <svg viewBox="0 0 30 50" className="w-10 h-14" fill="none">
+    <svg viewBox="0 0 30 60" className="w-10 h-14" fill="none">
       <rect x="5" y="8" width="20" height="34" rx="4" fill="#0e0e16" stroke="#ff174460" strokeWidth="1" />
+      {/* Headlight glow halos */}
+      <circle cx="9" cy="9" r="5" fill="#ffab0030" />
+      <circle cx="21" cy="9" r="5" fill="#ffab0030" />
+      {/* Headlights */}
+      <rect x="7" y="7" width="4" height="3" rx="1" fill="#ffab00" opacity="0.8" />
+      <rect x="19" y="7" width="4" height="3" rx="1" fill="#ffab00" opacity="0.8" />
+      {/* Headlight beam glow */}
+      <ellipse cx="9" cy="4" rx="3" ry="2" fill="#ffab0020" />
+      <ellipse cx="21" cy="4" rx="3" ry="2" fill="#ffab0020" />
+      {/* Taillights */}
       <rect x="7" y="39" width="4" height="3" rx="1" fill="#ff174460" />
       <rect x="19" y="39" width="4" height="3" rx="1" fill="#ff174460" />
     </svg>
@@ -73,6 +83,13 @@ function DarkPatchSvg() {
   )
 }
 
+// Skyline building data — static so it does not regenerate on re-render
+const SKYLINE_BUILDINGS = Array.from({ length: 18 }, (_, i) => ({
+  x: i * 6,
+  w: 3 + (i * 7 + 3) % 4,
+  h: 15 + (i * 13 + 7) % 30,
+}))
+
 type SirenState = 'none' | 'active' | 'stopped' | 'clear'
 
 export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: DrivingGameProps) {
@@ -82,6 +99,9 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   const [screenDim, setScreenDim] = useState(false)
   const [sirenState, setSirenState] = useState<SirenState>('none')
   const [screenShake, setScreenShake] = useState(false)
+  const [hudVisible, setHudVisible] = useState(true)
+  const [sirenStartTime, setSirenStartTime] = useState(0)
+  const [sirenCountdown, setSirenCountdown] = useState(1)
 
   const nextObsId = useRef(0)
   const sirenTimerRef = useRef<ReturnType<typeof setTimeout>>()
@@ -92,6 +112,28 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   const sirenStateRef = useRef(sirenState)
   sirenStateRef.current = sirenState
   const completedRef = useRef(false)
+
+  // Fade HUD arrows after 3 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => setHudVisible(false), 3000)
+    return () => clearTimeout(timer)
+  }, [])
+
+  // Siren countdown animation
+  useEffect(() => {
+    if (sirenState === 'active') {
+      setSirenStartTime(Date.now())
+      setSirenCountdown(1)
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - sirenStartTime
+        const remaining = Math.max(0, 1 - elapsed / SIREN_REACTION_TIME)
+        setSirenCountdown(remaining)
+        if (remaining <= 0) clearInterval(interval)
+      }, 50)
+      return () => clearInterval(interval)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sirenState])
 
   // Generate obstacles on mount
   useEffect(() => {
@@ -191,6 +233,15 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
     }, SIREN_WAIT_TIME)
   }, [scheduleSiren])
 
+  // Touch handlers for lane switching
+  const handleMoveLeft = useCallback(() => {
+    setPlayerLane(prev => Math.max(0, prev - 1))
+  }, [])
+
+  const handleMoveRight = useCallback(() => {
+    setPlayerLane(prev => Math.min(LANE_COUNT - 1, prev + 1))
+  }, [])
+
   // Keyboard controls
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -214,6 +265,12 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
   const progressPct = Math.min(100, (distance / TOTAL_DISTANCE) * 100)
   const laneXPositions = [20, 50, 80] // percentage positions for 3 lanes
 
+  // Estimated time to arrival: distance remaining / speed per second
+  // Speed = SPEED_KM_PER_TICK * (1000/50) = 2 km/s
+  const speedKmPerSec = SPEED_KM_PER_TICK * 20
+  const remainingDist = Math.max(0, TOTAL_DISTANCE - distance)
+  const etaSeconds = Math.ceil(remainingDist / speedKmPerSec)
+
   return (
     <motion.div
       className="flex flex-col flex-1 select-none relative overflow-hidden"
@@ -232,42 +289,55 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
         )}
       </AnimatePresence>
 
-      {/* Siren overlay */}
-      <AnimatePresence>
-        {sirenState === 'active' && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5, repeat: Infinity }}
-            className="absolute inset-0 bg-alert-red/30 z-20 pointer-events-none"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Siren message — full screen overlay, unmissable */}
+      {/* Siren overlay — red tinted with backdrop blur */}
       <AnimatePresence>
         {sirenState === 'active' && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-30 flex items-center justify-center bg-noir-bg/60 backdrop-blur-[2px]"
+            className="absolute inset-0 z-20 pointer-events-none"
+            style={{ background: 'radial-gradient(ellipse at center, rgba(255,23,68,0.25) 0%, rgba(255,23,68,0.4) 100%)' }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Siren message — full screen overlay, unmissable, tappable on mobile */}
+      <AnimatePresence>
+        {sirenState === 'active' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-30 flex items-center justify-center bg-alert-red/20 backdrop-blur-sm"
             onClick={handleSirenStop}
+            onTouchStart={handleSirenStop}
           >
             <motion.div
               initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.5, opacity: 0 }}
-              className="flex flex-col items-center gap-4 p-8 rounded-xl border-2 border-alert-red/60 bg-noir-bg/90 shadow-[0_0_60px_rgba(255,23,68,0.4)]"
+              className="flex flex-col items-center gap-4 p-8 rounded-xl border-2 border-alert-red/60 bg-noir-bg/90 shadow-[0_0_80px_rgba(255,23,68,0.5)]"
             >
-              <motion.span
-                animate={{ scale: [1, 1.1, 1] }}
+              <motion.div
+                animate={{ scale: [1, 1.15, 1] }}
                 transition={{ duration: 0.4, repeat: Infinity }}
-                className="text-3xl md:text-4xl font-bold text-alert-red animate-pulse-red px-4 py-2"
+                className="text-4xl md:text-5xl font-bold text-alert-red animate-pulse-red px-4 py-2 text-center"
               >
                 STOP! GET OUT!
-              </motion.span>
+              </motion.div>
+              {/* Countdown bar */}
+              <div className="w-48 h-2 bg-noir-border rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-alert-red rounded-full"
+                  initial={{ width: '100%' }}
+                  animate={{ width: '0%' }}
+                  transition={{ duration: SIREN_REACTION_TIME / 1000, ease: 'linear' }}
+                />
+              </div>
+              <span className="text-xs text-text-muted/70 uppercase tracking-wider">
+                {Math.ceil(sirenCountdown * SIREN_REACTION_TIME / 1000)}s to react
+              </span>
               <span className="text-sm text-text-muted">Press SPACE or tap to stop and lie flat</span>
             </motion.div>
           </motion.div>
@@ -291,8 +361,14 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
 
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-noir-border z-10">
-        <div className="text-xs text-text-muted">
-          Distance: <span className="text-neon-green font-bold tabular-nums stat-glow">{Math.round(distance)}km</span> / {TOTAL_DISTANCE}km
+        <div className="flex flex-col">
+          <div className="text-sm md:text-base text-text-primary">
+            <span className="text-neon-green font-bold tabular-nums stat-glow text-lg md:text-xl">{Math.round(distance)}km</span>
+            <span className="text-text-muted text-xs ml-1">/ {TOTAL_DISTANCE}km</span>
+          </div>
+          <div className="text-[10px] text-text-muted tabular-nums">
+            ~{etaSeconds}s to parents
+          </div>
         </div>
         <div className="text-xs text-text-muted">
           Route 1 — <span className="text-neon-amber">Heading to Parents</span>
@@ -300,7 +376,7 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-1 bg-noir-border z-10">
+      <div className="w-full h-1.5 bg-noir-border z-10">
         <div
           className="h-full bg-neon-green transition-all duration-100"
           style={{ width: `${progressPct}%` }}
@@ -309,11 +385,68 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
 
       {/* Road scene */}
       <div className="flex-1 relative overflow-hidden bg-noir-bg">
+        {/* Touch zones for lane switching */}
+        <div className="absolute inset-0 flex z-[15]">
+          <div
+            className="flex-1"
+            onTouchStart={handleMoveLeft}
+          />
+          <div className="flex-1" />
+          <div
+            className="flex-1"
+            onTouchStart={handleMoveRight}
+          />
+        </div>
+
+        {/* Parallax city skyline background */}
+        <div className="absolute inset-x-0 top-0 h-[25%] overflow-hidden pointer-events-none">
+          <div
+            className="absolute inset-0"
+            style={{
+              transform: `translateX(${-(distance * 0.3) % 50}px)`,
+            }}
+          >
+            {SKYLINE_BUILDINGS.map((b, i) => (
+              <div
+                key={`sky-${i}`}
+                className="absolute bottom-0"
+                style={{
+                  left: `${b.x}%`,
+                  width: `${b.w}%`,
+                  height: `${b.h}%`,
+                  background: 'linear-gradient(to top, #0e0e16, #12121a)',
+                  borderTop: '1px solid #2a2a3e20',
+                  borderLeft: '1px solid #2a2a3e15',
+                  borderRight: '1px solid #2a2a3e15',
+                }}
+              >
+                {/* Window dots */}
+                {b.h > 25 && Array.from({ length: Math.floor(b.h / 12) }).map((_, wi) => (
+                  <div
+                    key={wi}
+                    className="absolute"
+                    style={{
+                      left: '30%',
+                      top: `${15 + wi * 25}%`,
+                      width: '40%',
+                      height: '3px',
+                      background: (i + wi) % 3 === 0 ? '#ffab0015' : '#448aff08',
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Road surface with subtle gradient */}
         <div className="absolute inset-x-[10%] inset-y-0 bg-noir-surface border-l-2 border-r-2 border-noir-border">
+          {/* Road edge markings — solid amber/yellow lines */}
+          <div className="absolute inset-y-0 left-0 w-1 bg-neon-amber/25" />
+          <div className="absolute inset-y-0 right-0 w-1 bg-neon-amber/25" />
           {/* Road edge glow */}
-          <div className="absolute inset-y-0 left-0 w-2 bg-gradient-to-r from-neon-amber/5 to-transparent" />
-          <div className="absolute inset-y-0 right-0 w-2 bg-gradient-to-l from-neon-amber/5 to-transparent" />
+          <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-neon-amber/10 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-3 bg-gradient-to-l from-neon-amber/10 to-transparent" />
         </div>
 
         {/* Center dashed line */}
@@ -392,7 +525,16 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
                 transform: 'translate(-50%, -50%)',
               }}
             >
-              {obs.type === 'car' && <ObstacleCarSvg />}
+              {obs.type === 'car' && (
+                <div className="relative">
+                  <ObstacleCarSvg />
+                  {/* Headlight ground glow */}
+                  <div
+                    className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-3 rounded-full"
+                    style={{ background: 'radial-gradient(ellipse, rgba(255,171,0,0.2) 0%, transparent 70%)' }}
+                  />
+                </div>
+              )}
               {obs.type === 'debris' && <DebrisSvg />}
               {obs.type === 'dark' && <DarkPatchSvg />}
             </div>
@@ -409,12 +551,23 @@ export function DrivingGame({ sanity, onSanityChange, onComplete, onFail }: Driv
           <CarSvg />
         </motion.div>
 
-        {/* Controls hint */}
-        <div className="absolute bottom-3 left-0 right-0 text-center">
-          <span className="text-[10px] text-text-muted/50 uppercase tracking-widest">
-            Arrow Keys / A-D to switch lanes
+        {/* Touch HUD arrows — fade after 3s */}
+        <motion.div
+          className="absolute bottom-3 left-0 right-0 flex justify-between px-4 z-20 pointer-events-none"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: hudVisible ? 1 : 0 }}
+          transition={{ duration: 1 }}
+        >
+          <span className="text-sm text-text-muted/40 bg-noir-bg/50 px-3 py-1 rounded-full border border-noir-border/30">
+            &#9664;
           </span>
-        </div>
+          <span className="text-[10px] text-text-muted/30 self-center uppercase tracking-widest">
+            Lane {playerLane + 1}
+          </span>
+          <span className="text-sm text-text-muted/40 bg-noir-bg/50 px-3 py-1 rounded-full border border-noir-border/30">
+            &#9654;
+          </span>
+        </motion.div>
       </div>
     </motion.div>
   )
