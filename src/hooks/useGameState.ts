@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 
-export type GamePhase = 'menu' | 'apartment' | 'siren' | 'packing' | 'running' | 'shelter' | 'gameover' | 'evacuation_choice' | 'driving' | 'mamad_arrival' | 'phase3'
+export type GamePhase = 'menu' | 'apartment' | 'siren' | 'packing' | 'running' | 'shelter' | 'gameover' | 'evacuation_choice' | 'driving' | 'mamad_arrival' | 'phase3' | 'mamad_gameover'
 
 export interface Upgrades {
   sneakers: boolean
@@ -21,6 +21,9 @@ export interface GameState {
   cashEarned: number
   sirensSurvived: number
   distance: number
+  familyMorale: number
+  supplies: number
+  mamadDay: number
 }
 
 export interface GameActions {
@@ -35,6 +38,9 @@ export interface GameActions {
   resetGame: () => void
   setSirensSurvived: (fn: (prev: number) => number) => void
   setDistance: (fn: (prev: number) => number) => void
+  setFamilyMorale: (fn: (prev: number) => number) => void
+  setSupplies: (fn: (prev: number) => number) => void
+  setMamadDay: (fn: (prev: number) => number) => void
 }
 
 const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val))
@@ -56,6 +62,9 @@ export function useGameState(): GameState & GameActions {
   const [cashEarned, setCashEarned] = useState(0)
   const [sirensSurvived, setSirensSurvivedRaw] = useState(0)
   const [distance, setDistanceRaw] = useState(0)
+  const [familyMorale, setFamilyMoraleRaw] = useState(70)
+  const [supplies, setSuppliesRaw] = useState(80)
+  const [mamadDay, setMamadDayRaw] = useState(1)
 
   const upgradesRef = useRef(upgrades)
   upgradesRef.current = upgrades
@@ -89,6 +98,18 @@ export function useGameState(): GameState & GameActions {
     setDistanceRaw(prev => clamp(fn(prev), 0, 60))
   }, [])
 
+  const setFamilyMorale = useCallback((fn: (prev: number) => number) => {
+    setFamilyMoraleRaw(prev => clamp(fn(prev), 0, 100))
+  }, [])
+
+  const setSupplies = useCallback((fn: (prev: number) => number) => {
+    setSuppliesRaw(prev => clamp(fn(prev), 0, 100))
+  }, [])
+
+  const setMamadDay = useCallback((fn: (prev: number) => number) => {
+    setMamadDayRaw(prev => fn(prev))
+  }, [])
+
   const setUpgrade = useCallback((key: keyof Upgrades) => {
     setUpgrades(prev => ({ ...prev, [key]: true }))
   }, [])
@@ -103,30 +124,56 @@ export function useGameState(): GameState & GameActions {
     setCashRaw(120)
     setInventory([])
     setUpgrades({ sneakers: false, powerbank: false, premiumCoffee: false })
-    setGamePhase('apartment')
+    setGamePhase('menu')
     setSirenCountdown(60)
     setTimeOfDay(0)
     setTimeSurvived(0)
     setCashEarned(0)
     setSirensSurvivedRaw(0)
     setDistanceRaw(0)
+    setFamilyMoraleRaw(70)
+    setSuppliesRaw(80)
+    setMamadDayRaw(1)
   }, [])
 
-  // Battery drain: -1 every 8s (or 16s with powerbank)
+  // Battery drain: -1 every 8s (or 16s with powerbank) — apartment and phase3
   useEffect(() => {
-    if (gamePhase !== 'apartment') return
+    if (gamePhase !== 'apartment' && gamePhase !== 'phase3') return
     const interval = upgradesRef.current.powerbank ? 16000 : 8000
     const timer = setInterval(() => {
-      if (gamePhaseRef.current === 'apartment') {
+      const phase = gamePhaseRef.current
+      if (phase === 'apartment' || phase === 'phase3') {
         setBatteryRaw(prev => clamp(prev - 1, 0, 100))
       }
     }, interval)
     return () => clearInterval(timer)
   }, [gamePhase, upgrades.powerbank])
 
+  // Passive supply drain in phase3: -1 every 15s
+  useEffect(() => {
+    if (gamePhase !== 'phase3') return
+    const timer = setInterval(() => {
+      if (gamePhaseRef.current === 'phase3') {
+        setSuppliesRaw(prev => clamp(prev - 1, 0, 100))
+      }
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [gamePhase])
+
+  // Passive morale drain in phase3: -1 every 20s
+  useEffect(() => {
+    if (gamePhase !== 'phase3') return
+    const timer = setInterval(() => {
+      if (gamePhaseRef.current === 'phase3') {
+        setFamilyMoraleRaw(prev => clamp(prev - 1, 0, 100))
+      }
+    }, 20000)
+    return () => clearInterval(timer)
+  }, [gamePhase])
+
   // Time survived tracker
   useEffect(() => {
-    if (gamePhase === 'menu' || gamePhase === 'gameover' || gamePhase === 'shelter') return
+    if (gamePhase === 'menu' || gamePhase === 'gameover' || gamePhase === 'shelter' || gamePhase === 'mamad_gameover') return
     const timer = setInterval(() => {
       setTimeSurvived(prev => prev + 1)
     }, 1000)
@@ -146,6 +193,9 @@ export function useGameState(): GameState & GameActions {
     cashEarned,
     sirensSurvived,
     distance,
+    familyMorale,
+    supplies,
+    mamadDay,
     setSanity,
     setBattery,
     setCash,
@@ -157,5 +207,8 @@ export function useGameState(): GameState & GameActions {
     resetGame,
     setSirensSurvived,
     setDistance,
+    setFamilyMorale,
+    setSupplies,
+    setMamadDay,
   }
 }

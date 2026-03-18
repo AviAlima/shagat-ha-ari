@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { NewsTicker } from './components/NewsTicker'
 import { StatsBar } from './components/StatsBar'
@@ -12,6 +12,10 @@ import { GameOver } from './components/GameOver'
 import { EvacuationChoice } from './components/EvacuationChoice'
 import { DrivingGame } from './components/DrivingGame'
 import { MamadArrival } from './components/MamadArrival'
+import { MamadRoom } from './components/MamadRoom'
+import { MamadEvent, MAMAD_EVENTS } from './components/MamadEvent'
+import type { MamadEventData } from './components/MamadEvent'
+import { MamadGameOver } from './components/MamadGameOver'
 import { useGameState } from './hooks/useGameState'
 
 function App() {
@@ -22,8 +26,69 @@ function App() {
   batteryRef.current = game.battery
   sirensSurvivedRef.current = game.sirensSurvived
 
-  const { setGamePhase, setSirenCountdown, setInventory, setSirensSurvived, setSanity, setCash, setUpgrade, advanceTime, resetGame } = game
+  const {
+    setGamePhase, setSirenCountdown, setInventory, setSirensSurvived,
+    setSanity, setBattery, setCash, setUpgrade, advanceTime, resetGame,
+    setFamilyMorale, setSupplies, setMamadDay,
+  } = game
 
+  // Phase 3 event system
+  const [currentEvent, setCurrentEvent] = useState<MamadEventData | null>(null)
+  const [mamadGameOverReason, setMamadGameOverReason] = useState<'sanity' | 'supplies' | 'morale' | 'survived' | null>(null)
+  const eventTimerRef = useRef<ReturnType<typeof setTimeout>>()
+
+  const scheduleEvent = useCallback(() => {
+    const delay = 20000 + Math.random() * 25000 // 20-45 seconds between events
+    eventTimerRef.current = setTimeout(() => {
+      const event = MAMAD_EVENTS[Math.floor(Math.random() * MAMAD_EVENTS.length)]
+      setCurrentEvent(event)
+    }, delay)
+  }, [])
+
+  // Schedule mamad events when in phase3
+  useEffect(() => {
+    if (game.gamePhase === 'phase3' && !currentEvent) {
+      scheduleEvent()
+    }
+    return () => {
+      if (eventTimerRef.current) clearTimeout(eventTimerRef.current)
+    }
+  }, [game.gamePhase, currentEvent, scheduleEvent])
+
+  // Check Phase 3 lose/win conditions
+  useEffect(() => {
+    if (game.gamePhase !== 'phase3') return
+    if (game.sanity <= 0) {
+      setMamadGameOverReason('sanity')
+      setGamePhase('mamad_gameover')
+    } else if (game.supplies <= 0) {
+      setMamadGameOverReason('supplies')
+      setGamePhase('mamad_gameover')
+    } else if (game.familyMorale <= 0) {
+      setMamadGameOverReason('morale')
+      setGamePhase('mamad_gameover')
+    } else if (game.mamadDay >= 8) {
+      setMamadGameOverReason('survived')
+      setGamePhase('mamad_gameover')
+    }
+  }, [game.gamePhase, game.sanity, game.supplies, game.familyMorale, game.mamadDay, setGamePhase])
+
+  const handleEventChoice = useCallback((effects: { sanity?: number; morale?: number; supplies?: number; battery?: number }) => {
+    if (effects.sanity) setSanity(prev => prev + effects.sanity!)
+    if (effects.morale) setFamilyMorale(prev => prev + effects.morale!)
+    if (effects.supplies) setSupplies(prev => prev + effects.supplies!)
+    if (effects.battery) setBattery(prev => prev + effects.battery!)
+    setCurrentEvent(null)
+  }, [setSanity, setFamilyMorale, setSupplies, setBattery])
+
+  const handleAdvanceDay = useCallback(() => {
+    setMamadDay(prev => prev + 1)
+    // Small passive drain on day advance
+    setSupplies(prev => prev - 3)
+    setSanity(prev => prev - 2)
+  }, [setMamadDay, setSupplies, setSanity])
+
+  // Siren scheduling for apartment phase
   const scheduleSiren = useCallback(() => {
     const baseMin = sirensSurvivedRef.current >= 3 ? 25000 : 45000
     const baseRange = sirensSurvivedRef.current >= 3 ? 25000 : 45000
@@ -96,6 +161,8 @@ function App() {
   }, [setGamePhase])
 
   const handleRetry = useCallback(() => {
+    setCurrentEvent(null)
+    setMamadGameOverReason(null)
     resetGame()
   }, [resetGame])
 
@@ -182,12 +249,29 @@ function App() {
         )}
 
         {game.gamePhase === 'phase3' && (
-          <div className="flex flex-col items-center justify-center flex-1 px-6 py-12">
-            <h1 className="text-2xl font-bold text-neon-amber mb-4">Phase 3: Coming Soon...</h1>
-            <p className="text-sm text-text-muted text-center">
-              Life in the mamad with your family. The war continues outside.
-            </p>
-          </div>
+          <MamadRoom
+            sanity={game.sanity}
+            battery={game.battery}
+            cash={game.cash}
+            upgrades={game.upgrades}
+            familyMorale={game.familyMorale}
+            supplies={game.supplies}
+            mamadDay={game.mamadDay}
+            onSanityChange={setSanity}
+            onFamilyMoraleChange={setFamilyMorale}
+            onSuppliesChange={setSupplies}
+            onBatteryChange={setBattery}
+            onAdvanceDay={handleAdvanceDay}
+          />
+        )}
+
+        {game.gamePhase === 'mamad_gameover' && mamadGameOverReason && (
+          <MamadGameOver
+            reason={mamadGameOverReason}
+            daysInMamad={game.mamadDay}
+            timeSurvived={game.timeSurvived}
+            onRetry={handleRetry}
+          />
         )}
 
         {game.gamePhase === 'gameover' && (
@@ -199,6 +283,11 @@ function App() {
           />
         )}
       </AnimatePresence>
+
+      {/* Phase 3 event overlay — renders on top of MamadRoom */}
+      {game.gamePhase === 'phase3' && currentEvent && (
+        <MamadEvent event={currentEvent} onChoice={handleEventChoice} />
+      )}
     </div>
   )
 }
