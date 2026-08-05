@@ -1,25 +1,29 @@
 @import "tailwindcss";
 
 @theme {
-  --color-noir-bg: #0a0a0f;
-  --color-noir-surface: #12121a;
-  --color-noir-card: #1a1a2e;
-  --color-noir-border: #2a2a3e;
+  --color-noir-bg: #08080d;
+  --color-noir-surface: #0d0d16;
+  --color-noir-card: #12121e;
+  --color-noir-elevated: #171728;
+  --color-noir-border: #232340;
   --color-alert-red: #ff1744;
   --color-alert-glow: #ff174480;
   --color-neon-amber: #ffab00;
   --color-neon-green: #00e676;
-  --color-neon-blue: #448aff;
-  --color-text-primary: #e0e0e0;
-  --color-text-muted: #888;
-  --font-mono: 'Courier New', monospace;
+  --color-neon-blue: #5c8dff;
+  --color-text-primary: #e8e8f0;
+  --color-text-muted: #9a9ab0;
+  --font-sans: 'Rubik', 'Heebo', -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 }
+
+/* ---------- Base ---------- */
 
 html::before {
   content: '';
   position: fixed;
   inset: 0;
-  opacity: 0.03;
+  opacity: 0.035;
   z-index: 0;
   pointer-events: none;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
@@ -34,8 +38,22 @@ html, body, #root {
   height: 100%;
   background-color: var(--color-noir-bg);
   color: var(--color-text-primary);
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   overflow-x: hidden;
+}
+
+/* Ambient city-haze atmosphere behind everything */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% -10%, rgba(92, 141, 255, 0.07), transparent),
+    radial-gradient(ellipse 50% 35% at 90% 0%, rgba(255, 23, 68, 0.05), transparent),
+    radial-gradient(ellipse 70% 50% at 50% 110%, rgba(255, 171, 0, 0.04), transparent),
+    linear-gradient(180deg, #0a0a14 0%, #08080d 60%, #060609 100%);
 }
 
 #root {
@@ -43,6 +61,14 @@ html, body, #root {
   transform: perspective(800px) rotateX(0.5deg);
   transform-origin: center center;
 }
+
+/* Subtle selection color */
+::selection {
+  background: rgba(255, 23, 68, 0.35);
+  color: #fff;
+}
+
+/* ---------- CRT / atmosphere animations ---------- */
 
 @keyframes scanline {
   0% { transform: translateY(-100%); }
@@ -65,28 +91,16 @@ html, body, #root {
   100% { transform: translateX(-50%); }
 }
 
-.animate-scanline {
-  animation: scanline 8s linear infinite;
-}
-
-.animate-flicker {
-  animation: flicker 0.15s infinite;
-}
-
-.animate-pulse-red {
-  animation: pulse-red 1.5s ease-in-out infinite;
-}
-
-.animate-ticker {
-  animation: ticker-scroll 30s linear infinite;
-}
+.animate-scanline { animation: scanline 8s linear infinite; }
+.animate-flicker { animation: flicker 0.15s infinite; }
+.animate-pulse-red { animation: pulse-red 1.5s ease-in-out infinite; }
+.animate-ticker { animation: ticker-scroll 40s linear infinite; }
 
 .crt-overlay {
   pointer-events: none;
   position: fixed;
   inset: 0;
   z-index: 50;
-  /* Scanlines + moving bright scanline */
   background-image:
     repeating-linear-gradient(
       0deg,
@@ -110,7 +124,6 @@ html, body, #root {
   100% { background-position: 0 0, 0 100vh; }
 }
 
-/* Chromatic aberration at edges */
 .crt-overlay::before {
   content: '';
   position: fixed;
@@ -125,7 +138,6 @@ html, body, #root {
   z-index: 50;
 }
 
-/* Corner vignette */
 .crt-overlay::after {
   content: '';
   position: fixed;
@@ -139,46 +151,91 @@ html, body, #root {
   z-index: 50;
 }
 
-/* Text shadow for important numbers/stats */
-.stat-glow {
-  text-shadow: 0 0 8px currentColor;
+/* ---------- Text glows ---------- */
+
+.stat-glow { text-shadow: 0 0 8px currentColor; }
+
+.text-glow-red { text-shadow: 0 0 12px rgba(255, 23, 68, 0.6), 0 0 40px rgba(255, 23, 68, 0.3); }
+.text-glow-green { text-shadow: 0 0 12px rgba(0, 230, 118, 0.5), 0 0 36px rgba(0, 230, 118, 0.25); }
+.text-glow-amber { text-shadow: 0 0 12px rgba(255, 171, 0, 0.5), 0 0 36px rgba(255, 171, 0, 0.25); }
+.text-glow-blue { text-shadow: 0 0 12px rgba(92, 141, 255, 0.5), 0 0 36px rgba(92, 141, 255, 0.25); }
+
+/* ---------- Surfaces ---------- */
+
+.panel-game {
+  position: relative;
+  background: linear-gradient(180deg, rgba(23, 23, 40, 0.9), rgba(13, 13, 22, 0.92));
+  border: 1px solid var(--color-noir-border);
+  border-radius: 0.75rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
-/* Subtle glow effect for highlighted elements */
-.glow-green {
-  box-shadow: 0 0 12px rgba(0, 230, 118, 0.3), 0 0 24px rgba(0, 230, 118, 0.1);
-}
+.glow-green { box-shadow: 0 0 12px rgba(0, 230, 118, 0.3), 0 0 24px rgba(0, 230, 118, 0.1); }
+.glow-red { box-shadow: 0 0 12px rgba(255, 23, 68, 0.3), 0 0 24px rgba(255, 23, 68, 0.1); }
+.glow-amber { box-shadow: 0 0 12px rgba(255, 171, 0, 0.3), 0 0 24px rgba(255, 171, 0, 0.1); }
 
-.glow-red {
-  box-shadow: 0 0 12px rgba(255, 23, 68, 0.3), 0 0 24px rgba(255, 23, 68, 0.1);
-}
+/* ---------- Buttons ---------- */
 
-.glow-amber {
-  box-shadow: 0 0 12px rgba(255, 171, 0, 0.3), 0 0 24px rgba(255, 171, 0, 0.1);
-}
-
-/* Better button base style */
 .btn-game {
-  font-family: var(--font-mono);
-  letter-spacing: 0.1em;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-weight: bold;
+  border-radius: 0.6rem;
+  cursor: pointer;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.btn-game:hover {
+.btn-primary {
+  background: linear-gradient(180deg, #ff2d55, #d4002e);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(255, 23, 68, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.btn-primary:hover {
   filter: brightness(1.15);
+  box-shadow: 0 0 32px rgba(255, 23, 68, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }
 
-/* Pulsing idle text */
+.btn-primary:active { transform: translateY(1px) scale(0.98); }
+
+.btn-ghost {
+  background: rgba(35, 35, 64, 0.4);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-noir-border);
+}
+
+.btn-ghost:hover {
+  background: rgba(35, 35, 64, 0.75);
+  border-color: rgba(92, 141, 255, 0.5);
+  color: #fff;
+}
+
+.btn-danger {
+  background: transparent;
+  color: var(--color-alert-red);
+  border: 1px solid rgba(255, 23, 68, 0.5);
+}
+
+.btn-danger:hover {
+  background: rgba(255, 23, 68, 0.12);
+  box-shadow: 0 0 20px rgba(255, 23, 68, 0.25);
+}
+
+/* ---------- Misc ---------- */
+
+.glow-green { box-shadow: 0 0 12px rgba(0, 230, 118, 0.3), 0 0 24px rgba(0, 230, 118, 0.1); }
+.glow-red { box-shadow: 0 0 12px rgba(255, 23, 68, 0.3), 0 0 24px rgba(255, 23, 68, 0.1); }
+.glow-amber { box-shadow: 0 0 12px rgba(255, 171, 0, 0.3), 0 0 24px rgba(255, 171, 0, 0.1); }
+
 @keyframes idle-pulse {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.7; }
 }
 
-.animate-idle-pulse {
-  animation: idle-pulse 3s ease-in-out infinite;
-}
+.animate-idle-pulse { animation: idle-pulse 3s ease-in-out infinite; }
 
 /* Screen shake */
 @keyframes screen-shake {
@@ -194,9 +251,7 @@ html, body, #root {
   90% { transform: translate(-3px, 3px); }
 }
 
-.animate-screen-shake {
-  animation: screen-shake 0.3s ease-in-out;
-}
+.animate-screen-shake { animation: screen-shake 0.3s ease-in-out; }
 
 @keyframes progress-pulse {
   0%, 100% { opacity: 1; }
@@ -225,37 +280,15 @@ html, body, #root {
   100% { transform: translateY(40px); }
 }
 
-.animate-road-dashes {
-  animation: road-dash-scroll 0.3s linear infinite;
-}
+.animate-road-dashes { animation: road-dash-scroll 0.3s linear infinite; }
 
 /* Item color coding for apartment */
-.item-positive {
-  border-color: rgba(0, 230, 118, 0.3);
-}
-
-.item-positive:hover {
-  border-color: rgba(0, 230, 118, 0.5);
-  box-shadow: 0 0 15px rgba(0, 230, 118, 0.15);
-}
-
-.item-negative {
-  border-color: rgba(255, 23, 68, 0.3);
-}
-
-.item-negative:hover {
-  border-color: rgba(255, 23, 68, 0.5);
-  box-shadow: 0 0 15px rgba(255, 23, 68, 0.15);
-}
-
-.item-neutral {
-  border-color: rgba(255, 171, 0, 0.3);
-}
-
-.item-neutral:hover {
-  border-color: rgba(255, 171, 0, 0.5);
-  box-shadow: 0 0 15px rgba(255, 171, 0, 0.15);
-}
+.item-positive { border-color: rgba(0, 230, 118, 0.3); }
+.item-positive:hover { border-color: rgba(0, 230, 118, 0.5); box-shadow: 0 0 15px rgba(0, 230, 118, 0.15); }
+.item-negative { border-color: rgba(255, 23, 68, 0.3); }
+.item-negative:hover { border-color: rgba(255, 23, 68, 0.5); box-shadow: 0 0 15px rgba(255, 23, 68, 0.15); }
+.item-neutral { border-color: rgba(255, 171, 0, 0.3); }
+.item-neutral:hover { border-color: rgba(255, 171, 0, 0.5); box-shadow: 0 0 15px rgba(255, 171, 0, 0.15); }
 
 /* Prevent text selection during gameplay */
 .select-none {
@@ -275,7 +308,8 @@ button, [role="button"] {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Low-sanity flicker effects */
+/* ---------- Low-sanity effects ---------- */
+
 @keyframes sanity-flicker {
   0%, 92%, 100% { opacity: 1; filter: none; }
   93% { opacity: 0.85; filter: hue-rotate(10deg) saturate(1.5); }
@@ -284,7 +318,6 @@ button, [role="button"] {
   98% { opacity: 1; filter: saturate(0.6); }
 }
 
-/* Sanity degradation visual effects */
 @keyframes sanity-shake-mild {
   0%, 100% { transform: translate(0); }
   25% { transform: translate(-1px, 0.5px); }
@@ -310,17 +343,9 @@ button, [role="button"] {
   97% { opacity: 0.98; }
 }
 
-.sanity-uneasy {
-  animation: sanity-uneasy 6s ease-in-out infinite;
-}
-
-.sanity-low {
-  animation: sanity-flicker 4s ease-in-out infinite, sanity-shake-mild 3s ease-in-out infinite;
-}
-
-.sanity-critical {
-  animation: sanity-flicker 1.5s ease-in-out infinite, sanity-shake-heavy 2s ease-in-out infinite;
-}
+.sanity-uneasy { animation: sanity-uneasy 6s ease-in-out infinite; }
+.sanity-low { animation: sanity-flicker 4s ease-in-out infinite, sanity-shake-mild 3s ease-in-out infinite; }
+.sanity-critical { animation: sanity-flicker 1.5s ease-in-out infinite, sanity-shake-heavy 2s ease-in-out infinite; }
 
 /* Glitch text effect for alert moments */
 @keyframes glitch-text {
@@ -331,6 +356,4 @@ button, [role="button"] {
   80% { clip-path: inset(10% 0 80% 0); transform: translate(1px, -2px); }
 }
 
-.glitch-text {
-  animation: glitch-text 0.3s linear;
-}
+.glitch-text { animation: glitch-text 0.3s linear; }

@@ -81,8 +81,6 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
 
   // Shaky hands — shuffle item positions as countdown drops
   useEffect(() => {
-    let interval: number | undefined
-
     if (countdown > 35) {
       return
     }
@@ -104,7 +102,7 @@ export function PackingGame({ countdown, onCountdownTick, onDone }: PackingGameP
       })
     }
 
-    interval = window.setInterval(shuffle, getDelay())
+    const interval = window.setInterval(shuffle, getDelay())
     return () => { if (interval) clearInterval(interval) }
   }, [countdown])
 

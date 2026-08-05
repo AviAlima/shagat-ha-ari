@@ -32,9 +32,9 @@ function TelAvivSkyline() {
       {/* Sky gradient */}
       <defs>
         <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#06060a" />
-          <stop offset="60%" stopColor="#0a0a14" />
-          <stop offset="100%" stopColor="#0e0e1a" />
+          <stop offset="0%" stopColor="#04040a" />
+          <stop offset="55%" stopColor="#08080f" />
+          <stop offset="100%" stopColor="#131020" />
         </linearGradient>
         {/* Window glow */}
         <filter id="windowGlow">
@@ -44,13 +44,32 @@ function TelAvivSkyline() {
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
+        {/* Moon glow */}
+        <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#e8e8f0" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#e8e8f0" stopOpacity="0" />
+        </radialGradient>
+        {/* City haze */}
+        <linearGradient id="hazeGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#ff1744" stopOpacity="0" />
+          <stop offset="100%" stopColor="#ff1744" stopOpacity="0.14" />
+        </linearGradient>
       </defs>
       <rect width="300" height="100" fill="url(#skyGrad)" />
+      {/* Moon */}
+      <circle cx="225" cy="18" r="22" fill="url(#moonGlow)" />
+      <circle cx="225" cy="18" r="6.5" fill="#e8e8f0" opacity="0.85" />
+      <circle cx="222" cy="15" r="1.3" fill="#c8c8d8" opacity="0.6" />
+      <circle cx="227.5" cy="20" r="1" fill="#c8c8d8" opacity="0.5" />
       {/* Stars */}
-      <circle cx="45" cy="12" r="0.5" fill="#e0e0e0" opacity="0.3" />
-      <circle cx="120" cy="8" r="0.4" fill="#e0e0e0" opacity="0.4" />
-      <circle cx="200" cy="15" r="0.5" fill="#e0e0e0" opacity="0.25" />
-      <circle cx="260" cy="10" r="0.6" fill="#e0e0e0" opacity="0.35" />
+      <circle cx="45" cy="12" r="0.5" fill="#e0e0e0" opacity="0.35" />
+      <circle cx="120" cy="8" r="0.4" fill="#e0e0e0" opacity="0.45" />
+      <circle cx="200" cy="15" r="0.5" fill="#e0e0e0" opacity="0.3" />
+      <circle cx="160" cy="20" r="0.4" fill="#e0e0e0" opacity="0.4" />
+      <circle cx="30" cy="26" r="0.4" fill="#e0e0e0" opacity="0.3" />
+      <circle cx="275" cy="6" r="0.5" fill="#e0e0e0" opacity="0.35" />
+      {/* Red horizon haze */}
+      <rect y="62" width="300" height="38" fill="url(#hazeGrad)" />
       {/* Buildings */}
       <rect x="10" y="40" width="15" height="60" fill="#0e0e16" stroke="#1a1a2e" strokeWidth="0.5" />
       <rect x="30" y="28" width="12" height="72" fill="#0e0e16" stroke="#1a1a2e" strokeWidth="0.5" />
@@ -309,7 +328,7 @@ function ApartmentItem({
       whileTap={disabled ? {} : { scale: 0.96 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-lg border transition-all cursor-pointer ${
+      className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all cursor-pointer ${
         disabled
           ? 'border-noir-border/30 bg-noir-card/20 opacity-40 cursor-not-allowed'
           : `${scheme.border} bg-noir-card/40 ${scheme.hover}`
@@ -320,7 +339,7 @@ function ApartmentItem({
         {/* Glow layer */}
         {!disabled && (
           <div
-            className="absolute blur-xl opacity-30 rounded-full"
+            className="absolute blur-xl opacity-40 rounded-full"
             style={{
               backgroundColor: glowColor,
               width: '60px',
@@ -339,15 +358,15 @@ function ApartmentItem({
 
       {/* Label and subtitle */}
       <div className="flex flex-col items-center text-center min-w-0">
-        <span className="text-[11px] text-text-primary/80 uppercase tracking-wider font-bold">{label}</span>
+        <span className="text-[11px] text-text-primary/85 uppercase tracking-wider font-semibold">{label}</span>
         {subtitle && (
-          <span className={`text-[9px] ${disabled ? 'text-text-muted/30' : 'text-text-muted/60'}`}>{subtitle}</span>
+          <span className={`text-[9px] font-mono ${disabled ? 'text-text-muted/30' : 'text-text-muted/60'}`}>{subtitle}</span>
         )}
       </div>
 
       {/* Cooldown bar */}
       {cooldownPct > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-noir-border rounded-b-lg overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-noir-border rounded-b-xl overflow-hidden">
           <div
             className="h-full bg-alert-red/60 transition-all duration-300"
             style={{ width: `${cooldownPct}%` }}
@@ -362,7 +381,7 @@ function ApartmentItem({
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -5 }}
-            className="absolute -top-5 left-2 text-[10px] text-neon-green whitespace-nowrap font-bold stat-glow"
+            className="absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] text-neon-green whitespace-nowrap font-bold stat-glow bg-noir-card/90 border border-neon-green/30 rounded-md px-2 py-0.5 z-20 shadow-[0_0_16px_rgba(0,230,118,0.2)]"
           >
             {statusText}
           </motion.span>
@@ -479,10 +498,12 @@ export function Apartment({
   return (
     <div className="flex flex-col flex-1 relative overflow-hidden">
       {/* Window / Skyline — taller, more atmospheric */}
-      <div className="relative h-36 border-b border-noir-border/60 overflow-hidden">
+      <div className="relative h-40 border-b border-noir-border/60 overflow-hidden">
         <TelAvivSkyline />
         {/* Gradient overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-t from-noir-bg/80 via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-noir-bg/85 via-transparent to-transparent" />
+        {/* Slight window reflection */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-noir-bg/10 to-noir-bg/20 pointer-events-none" />
         <AnimatePresence>
           {flash && (
             <motion.div
@@ -495,10 +516,10 @@ export function Apartment({
           )}
         </AnimatePresence>
         <div className="absolute bottom-3 left-4 right-4 flex items-end justify-between">
-          <span className="text-[10px] text-text-muted/40 uppercase tracking-widest">
+          <span className="text-[10px] text-text-muted/50 uppercase tracking-widest font-mono">
             Tel Aviv — View from Window
           </span>
-          <div className="flex items-center gap-1.5 text-[10px] text-text-muted/30">
+          <div className="flex items-center gap-1.5 text-[10px] text-text-muted/40 font-mono">
             <Clock size={10} />
             <span className="tabular-nums">{new Date().toLocaleTimeString('en-IL', { hour: '2-digit', minute: '2-digit' })}</span>
           </div>
@@ -507,14 +528,14 @@ export function Apartment({
 
       {/* Ambient room description */}
       <div className="px-4 pt-3 pb-1">
-        <p className="text-[11px] text-text-muted/50 italic">
+        <p className="text-[11px] text-text-muted/60 italic">
           Your Tel Aviv apartment. Sirens could come any moment.
         </p>
         {isIdle && (
           <motion.p
             animate={{ opacity: [0.2, 0.5, 0.2] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="text-[10px] text-text-muted/30 mt-1"
+            className="text-[10px] text-text-muted/30 mt-1 font-mono"
           >
             Waiting...
           </motion.p>
@@ -530,7 +551,7 @@ export function Apartment({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="px-4 py-2.5 bg-noir-card border border-alert-red/30 rounded-lg text-xs text-alert-red/80 overflow-hidden shadow-[0_0_20px_rgba(255,23,68,0.1)]"
+              className="px-4 py-2.5 bg-noir-card/90 border border-alert-red/30 rounded-xl text-xs text-alert-red/85 overflow-hidden shadow-[0_0_20px_rgba(255,23,68,0.1)] backdrop-blur-sm"
             >
               {tvText}
             </motion.div>
